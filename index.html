@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BANK - v19</title>
+    <title>BANK - v20</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
@@ -52,7 +52,8 @@
         .btn-toggle { background: #eee; color: #999; border: none; padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; margin-right: 5px; }
         .btn-toggle.active-p { background: var(--accent); color: white; }
         .btn-toggle.active-v { background: #f1c40f; color: #2c3e50; }
-        .btn-del { background: #fff5f5; color: var(--danger); border: none; width: 30px; height: 30px; border-radius: 10px; cursor: pointer; font-size: 20px; }
+        .btn-del  { background: #fff5f5; color: var(--danger); border: none; width: 30px; height: 30px; border-radius: 10px; cursor: pointer; font-size: 20px; }
+        .btn-edit { background: #eaf4fb; color: var(--accent); border: none; width: 30px; height: 30px; border-radius: 10px; cursor: pointer; font-size: 14px; margin-right: 4px; }
 
         .rapport-results { width: 100%; max-width: 400px; margin-top: 20px; }
         .totaux-card { background: white; border-radius: 16px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-around; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -219,7 +220,45 @@
         </div>
     </div>
 
-    <div class="version">VERSION 19</div>
+    <!-- Modal édition opération -->
+    <div class="env-modal-overlay" id="opModal">
+        <div class="env-modal-box">
+            <p class="env-modal-title">Modifier l'opération</p>
+            <input type="hidden" id="opModalId">
+            <div class="env-modal-field">
+                <label>Date</label>
+                <input type="date" id="opModalDate">
+            </div>
+            <div class="env-modal-field">
+                <label>Tiers</label>
+                <input type="text" id="opModalTiers" placeholder="ex : leclerc">
+            </div>
+            <div class="env-modal-field">
+                <label>Type</label>
+                <select id="opModalType" style="width:100%;padding:11px 14px;border:1px solid #e0e0e0;border-radius:12px;font-size:14px;box-sizing:border-box;font-family:inherit;outline:none;">
+                    <option value="depense">Dépense</option>
+                    <option value="recette">Recette</option>
+                </select>
+            </div>
+            <div class="env-modal-field">
+                <label>Montant (€)</label>
+                <input type="number" step="0.01" id="opModalMontant" placeholder="0.00" inputmode="decimal">
+            </div>
+            <div class="env-modal-field">
+                <label>Compte (E/C)</label>
+                <select id="opModalCompte" style="width:100%;padding:11px 14px;border:1px solid #e0e0e0;border-radius:12px;font-size:14px;box-sizing:border-box;font-family:inherit;outline:none;">
+                    <option value="E">E</option>
+                    <option value="C">C</option>
+                </select>
+            </div>
+            <div class="env-modal-actions">
+                <button class="env-modal-cancel" onclick="closeOpModal()">Annuler</button>
+                <button class="env-modal-save"   onclick="saveOpModal()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="version">VERSION 20</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -664,10 +703,49 @@
             updateHeadReste();
         };
 
+        // Cache des 40 dernières opérations pour ouverture rapide du modal
+        let opsCache = {};
+
+        window.openOpModal = (id) => {
+            const op = opsCache[id];
+            if (!op) return;
+            document.getElementById('opModalId').value = id;
+            document.getElementById('opModalDate').value = op.Date || '';
+            document.getElementById('opModalTiers').value = op.Tiers || '';
+            const isDep = cleanVal(op["Dépenses"]) > 0;
+            document.getElementById('opModalType').value = isDep ? 'depense' : 'recette';
+            document.getElementById('opModalMontant').value = isDep ? cleanVal(op["Dépenses"]) : cleanVal(op["Recettes"]);
+            document.getElementById('opModalCompte').value = op["E/C"] || 'E';
+            document.getElementById('opModal').classList.add('open');
+        };
+
+        window.closeOpModal = () => {
+            document.getElementById('opModal').classList.remove('open');
+        };
+
+        window.saveOpModal = async () => {
+            const id = document.getElementById('opModalId').value;
+            const type = document.getElementById('opModalType').value;
+            const montant = parseFloat(document.getElementById('opModalMontant').value);
+            if (!id || isNaN(montant) || montant <= 0) return;
+            await updateDoc(doc(db, "operations", id), {
+                Date: document.getElementById('opModalDate').value,
+                Tiers: document.getElementById('opModalTiers').value,
+                "Dépenses": type === 'depense' ? montant : "",
+                "Recettes": type === 'recette' ? montant : "",
+                "E/C": document.getElementById('opModalCompte').value,
+            });
+            await recalculerEnveloppes();
+            await updateHeader();
+            closeOpModal();
+        };
+
         onSnapshot(query(opsColl, orderBy("Date", "desc"), limit(40)), (snap) => {
+            opsCache = {};
             const list = document.getElementById('history-list');
             list.innerHTML = snap.docs.map(ds => {
                 const op = ds.data(); const id = ds.id;
+                opsCache[id] = op;
                 const dep = cleanVal(op["Dépenses"]); const rec = cleanVal(op["Recettes"]);
                 const isDep = dep > 0;
                 return `
@@ -681,6 +759,7 @@
                             </div>
                         </div>
                         <div class="op-amt" style="color: ${isDep ? 'var(--danger)' : 'var(--success)'}">${fmt(isDep ? -dep : rec)}</div>
+                        <button class="btn-edit" onclick="openOpModal('${id}')">✎</button>
                         <button class="btn-del" onclick="supprOp('${id}')">×</button>
                     </div>
                 `;
