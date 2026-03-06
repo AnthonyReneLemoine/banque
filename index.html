@@ -3,27 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BANK - v13</title>
+    <title>BANK - v14</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
+        
         .header-banner { background: #2c3e50; color: white; position: fixed; top: 0; left: 0; right: 0; height: 65px; z-index: 1000; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .recap-item { text-align: center; }
-        .recap-val { font-size: 14px; font-weight: bold; display: block; }
+        .recap-val { font-size: 15px; font-weight: bold; display: block; }
         .recap-label { font-size: 8px; text-transform: uppercase; color: #bdc3c7; letter-spacing: 1px; }
+
         .tab-bar { position: fixed; top: 65px; left: 0; right: 0; height: 45px; background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; z-index: 999; }
-        .tab-btn { flex: 1; border: none; background: none; font-size: 11px; font-weight: 700; color: #7f8c8d; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab-btn { flex: 1; border: none; background: none; font-size: 10px; font-weight: 700; color: #7f8c8d; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; text-transform: uppercase; }
         .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
         .screen { display: none; width: 100%; padding: 130px 15px 30px 15px; box-sizing: border-box; flex-direction: column; align-items: center; }
         .screen.active { display: flex; }
-        form, .card { background: white; width: 100%; max-width: 420px; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); box-sizing: border-box; }
+
+        form, .card { background: white; width: 100%; max-width: 400px; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); box-sizing: border-box; }
+        .form-group { margin-bottom: 12px; }
         label { font-size: 11px; font-weight: 600; color: #7f8c8d; margin-bottom: 4px; display: block; text-align: center; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 12px; background: #fafafa; font-size: 14px; text-align: center; outline: none; }
-        .env-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
-        .env-name { font-weight: 600; color: var(--primary); flex: 2; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 12px; background: #fafafa; font-size: 14px; text-align: center; font-family: inherit; outline: none; }
+        
+        .segmented-control { display: flex; background: #eee; padding: 3px; border-radius: 12px; margin-bottom: 8px; }
+        .segmented-control label { flex: 1; text-align: center; padding: 8px; cursor: pointer; border-radius: 10px; font-size: 12px; color: #666; margin: 0; transition: 0.2s; }
+        .segmented-control input[type="radio"] { display: none; }
+        .segmented-control input:checked + label { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-weight: bold; }
+
+        .env-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
+        .env-name { font-weight: 600; color: var(--primary); text-transform: capitalize; flex: 2; }
         .env-val { flex: 1; text-align: right; font-weight: 700; }
         .env-total { flex: 1; text-align: right; color: #95a5a6; font-size: 11px; }
+
+        .op-card { background: white; padding: 12px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; width: 100%; max-width: 400px; border-left: 5px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .op-card.depense { border-left-color: var(--danger); }
+        .op-card.recette { border-left-color: var(--success); }
+
         .version { position: fixed; bottom: 8px; right: 12px; font-size: 10px; color: #cbd5e0; font-weight: bold; }
     </style>
 </head>
@@ -44,23 +60,35 @@
 
     <div class="screen active" id="screen-saisie">
         <form id="formOperation">
-            <div class="mb-4"><label>Date</label><input type="date" id="date" required></div>
-            <div class="mb-4"><label>Tiers</label><input type="text" id="tiers" list="tiersList" placeholder="Ex: leclerc" required><datalist id="tiersList"></datalist></div>
-            <div class="mb-4"><label>Montant (€)</label><input type="number" step="0.01" id="montant" placeholder="0.00" required></div>
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <label style="flex:1; background:#eee; padding:10px; border-radius:10px;"><input type="radio" name="typeOp" value="depense" checked> Dépense</label>
-                <label style="flex:1; background:#eee; padding:10px; border-radius:10px;"><input type="radio" name="typeOp" value="recette"> Recette</label>
+            <div class="form-group"><label>Date</label><input type="date" id="date" required></div>
+            <div class="form-group">
+                <div class="segmented-control">
+                    <input type="radio" name="compte" value="c" id="c" checked><label for="c">Courant</label>
+                    <input type="radio" name="compte" value="e" id="e"><label for="e">Essentiel</label>
+                </div>
+                <div class="segmented-control">
+                    <input type="radio" name="typeOp" value="depense" id="d" checked><label for="d">Dépense</label>
+                    <input type="radio" name="typeOp" value="recette" id="r"><label for="r">Recette</label>
+                </div>
             </div>
-            <button type="submit" id="btnAjouter" class="w-full bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg">ENREGISTRER</button>
+            <div class="form-group">
+                <label>Tiers / Fournisseur</label>
+                <input type="text" id="tiers" list="tiersList" placeholder="Ex: leclerc" required>
+                <datalist id="tiersList"></datalist>
+            </div>
+            <div class="form-group"><label>Montant (€)</label><input type="number" step="0.01" id="montant" placeholder="0.00" required></div>
+            <button type="submit" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg mt-2">ENREGISTRER</button>
         </form>
     </div>
 
     <div class="screen" id="screen-enveloppes">
         <div class="card">
             <div class="flex justify-between items-center mb-4 pb-2 border-b">
-                <span class="text-[10px] font-bold text-gray-400">MULTIPLIER LECLERC</span>
-                <select id="leclercMult" onchange="updateLeclerc()" class="w-20 p-1 text-xs border rounded">
-                    <option value="3">x3</option><option value="4">x4</option><option value="5">x5</option>
+                <span class="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Multiplicateur Leclerc</span>
+                <select id="leclercMult" onchange="updateLeclercConfig()" class="w-20 p-1 text-xs border rounded bg-white">
+                    <option value="3">3x</option>
+                    <option value="4">4x</option>
+                    <option value="5">5x</option>
                 </select>
             </div>
             <div id="envelopes-list"></div>
@@ -70,11 +98,11 @@
     <div class="screen" id="screen-historique"><div id="history-list" class="w-full flex flex-col items-center"></div></div>
     <div class="screen" id="screen-rapport"><div id="rapport-results" class="w-full flex flex-col items-center"></div></div>
 
-    <div class="version">VERSION 13</div>
+    <div class="version">VERSION 14</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, getDocs, doc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, getDocs, doc, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyABmCu61-jScR4yDAqFKJ_RXwcKAmok4pg",
@@ -93,66 +121,75 @@
         const fmt = (n) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
         const today = new Date();
 
-        // --- INITIALISATION ENVELOPPES ---
+        // --- GESTION DES ENVELOPPES (COLONNE C, D, E) ---
         const envDefaults = {
             "carburant": 60, "resto": 60, "leclerc": 375, "inter": 150, "disney": 6.99,
             "mma": 16.55, "mh": 730.97, "malakoff": 45.96, "cofidis": 32.08, "youtube": 12.99,
             "paypal": 11.49, "virement vers caisse epargne": 25, "ai": 21.6
         };
 
-        const checkMonthlyReset = async () => {
+        const checkReset = async () => {
             const configRef = doc(db, "config", "budget");
-            const configSnap = await getDoc(configRef);
-            const lastReset = configSnap.exists() ? configSnap.data().lastReset : "";
+            const snap = await getDoc(configRef);
             const currentMonth = `${today.getFullYear()}-${today.getMonth()}`;
-
-            if (lastReset !== currentMonth) {
-                for (const [name, val] of Object.entries(envDefaults)) {
-                    await setDoc(doc(db, "envelopes", name), { reste: val, initial: val });
+            
+            if (!snap.exists() || snap.data().lastReset !== currentMonth) {
+                for (const [key, val] of Object.entries(envDefaults)) {
+                    let initialVal = val;
+                    if (key === "leclerc") {
+                        const multSnap = await getDoc(doc(db, "config", "leclerc"));
+                        initialVal = (multSnap.exists() ? multSnap.data().mult : 3) * 125;
+                    }
+                    await setDoc(doc(db, "envelopes", key), { reste: initialVal, initial: initialVal });
                 }
                 await setDoc(configRef, { lastReset: currentMonth }, { merge: true });
             }
         };
 
-        window.updateLeclerc = async () => {
+        window.updateLeclercConfig = async () => {
             const mult = parseInt(document.getElementById('leclercMult').value);
-            const newVal = mult * 125;
-            await updateDoc(doc(db, "envelopes", "leclerc"), { initial: newVal, reste: newVal });
+            await setDoc(doc(db, "config", "leclerc"), { mult: mult });
+            const initial = mult * 125;
+            await updateDoc(doc(db, "envelopes", "leclerc"), { initial: initial, reste: initial });
         };
 
-        // --- NAVIGATION ---
         window.showScreen = (n) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('screen-' + n).classList.add('active');
-            event.target.classList.add('active');
+            event.currentTarget.classList.add('active');
         };
 
-        // --- SAISIE & DEDUCTION ---
+        // --- SAISIE AVEC DEDUCTION AUTOMATIQUE ---
         document.getElementById('formOperation').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const tiers = document.getElementById('tiers').value.toLowerCase();
+            const tiersRaw = document.getElementById('tiers').value;
+            const tiers = tiersRaw.toLowerCase().trim();
             const montant = parseFloat(document.getElementById('montant').value);
             const type = document.querySelector('input[name="typeOp"]:checked').value;
 
             await addDoc(opsColl, {
-                "Date": document.getElementById('date').value, "Tiers": tiers,
-                "Dépenses": type === 'depense' ? montant : "", "Recettes": type === 'recette' ? montant : ""
+                "Date": document.getElementById('date').value,
+                "Tiers": tiersRaw,
+                "Dépenses": type === 'depense' ? montant : "",
+                "Recettes": type === 'recette' ? montant : "",
+                "E/C": document.querySelector('input[name="compte"]:checked').value,
+                "timestamp": new Date().toISOString()
             });
 
             if (type === 'depense') {
                 const envRef = doc(db, "envelopes", tiers);
                 const envSnap = await getDoc(envRef);
                 if (envSnap.exists()) {
-                    const currentReste = envSnap.data().reste;
-                    await updateDoc(envRef, { reste: currentReste - montant });
+                    await updateDoc(envRef, { reste: envSnap.data().reste - montant });
                 }
             }
             document.getElementById('formOperation').reset();
+            document.getElementById('date').valueAsDate = new Date();
             showScreen('historique');
         });
 
-        // --- AFFICHAGE ENVELOPPES ---
+        // --- TEMPS REEL ---
         onSnapshot(envColl, (snap) => {
             const list = document.getElementById('envelopes-list');
             list.innerHTML = '';
@@ -160,35 +197,48 @@
                 const data = d.data();
                 list.innerHTML += `
                     <div class="env-row">
-                        <span class="env-name text-transform:capitalize">${d.id}</span>
+                        <span class="env-name">${d.id}</span>
                         <span class="env-val ${data.reste < 0 ? 'text-red-500' : 'text-green-600'}">${data.reste.toFixed(2)} €</span>
                         <span class="env-total">/ ${data.initial} €</span>
                     </div>`;
             });
         });
 
-        // --- HEADER & HISTO ---
         onSnapshot(query(opsColl, orderBy("Date", "desc"), limit(40)), (snap) => {
-            let r = 0, d = 0;
-            const hList = document.getElementById('history-list');
-            hList.innerHTML = '';
+            const list = document.getElementById('history-list');
+            const tiersList = document.getElementById('tiersList');
+            const tiersSet = new Set();
+            let rTotal = 0, dTotal = 0;
+            
+            list.innerHTML = '';
             snap.forEach(ds => {
                 const op = ds.data();
-                const dep = parseFloat(op["Dépenses"]) || 0;
-                const rec = parseFloat(op["Recettes"]) || 0;
-                r += rec; d += dep;
-                hList.innerHTML += `<div class="op-card p-3 bg-white mb-2 rounded-lg w-full max-w-md shadow-sm flex justify-between">
-                    <div><small class="text-gray-400">${op.Date}</small><br><strong>${op.Tiers}</strong></div>
-                    <div class="font-bold ${dep > 0 ? 'text-red-500' : 'text-green-600'}">${(rec-dep).toFixed(2)} €</div>
-                </div>`;
+                const d = parseFloat(op["Dépenses"]) || 0;
+                const r = parseFloat(op["Recettes"]) || 0;
+                rTotal += r; dTotal += d;
+                if(op.Tiers) tiersSet.add(op.Tiers);
+
+                list.innerHTML += `
+                    <div class="op-card ${d > 0 ? 'depense' : 'recette'}">
+                        <div style="flex:1"><small class="text-gray-400">${op.Date}</small><br><strong>${op.Tiers}</strong></div>
+                        <div class="font-bold text-right ${d > 0 ? 'text-red-500' : 'text-green-600'}">${(r-d).toFixed(2)} €</div>
+                    </div>`;
             });
-            document.getElementById('headRecette').innerText = fmt(r);
-            document.getElementById('headDepense').innerText = fmt(d);
-            document.getElementById('headSolde').innerText = fmt(r - d);
+            
+            tiersList.innerHTML = Array.from(tiersSet).sort().map(t => `<option value="${t}">`).join('');
+            document.getElementById('headRecette').innerText = fmt(rTotal);
+            document.getElementById('headDepense').innerText = fmt(dTotal);
+            document.getElementById('headSolde').innerText = fmt(rTotal - dTotal);
         });
 
-        checkMonthlyReset();
+        // Init
         document.getElementById('date').valueAsDate = today;
+        const initMult = async () => {
+            const m = await getDoc(doc(db, "config", "leclerc"));
+            if(m.exists()) document.getElementById('leclercMult').value = m.data().mult;
+        };
+        initMult();
+        checkReset();
     </script>
 </body>
 </html>
