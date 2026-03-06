@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BANK - v21</title>
+    <title>BANK - v22</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
@@ -258,7 +258,7 @@
         </div>
     </div>
 
-    <div class="version">VERSION 21</div>
+    <div class="version">VERSION 22</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -724,20 +724,25 @@
         };
 
         window.saveOpModal = async () => {
-            const id = document.getElementById('opModalId').value;
-            const type = document.getElementById('opModalType').value;
-            const montant = parseFloat(document.getElementById('opModalMontant').value);
-            if (!id || isNaN(montant) || montant <= 0) return;
-            await updateDoc(doc(db, "operations", id), {
-                Date: document.getElementById('opModalDate').value,
-                Tiers: document.getElementById('opModalTiers').value,
-                "Dépenses": type === 'depense' ? montant : "",
-                "Recettes": type === 'recette' ? montant : "",
-                "E/C": document.getElementById('opModalCompte').value,
-            });
-            await recalculerEnveloppes();
-            await updateHeader();
-            closeOpModal();
+            try {
+                const id = document.getElementById('opModalId').value;
+                const type = document.getElementById('opModalType').value;
+                const montant = parseFloat(document.getElementById('opModalMontant').value);
+                if (!id || isNaN(montant) || montant <= 0) return;
+                await updateDoc(doc(db, "operations", id), {
+                    Date: document.getElementById('opModalDate').value,
+                    Tiers: document.getElementById('opModalTiers').value.trim().toLowerCase(),
+                    "Dépenses": type === 'depense' ? montant : "",
+                    "Recettes": type === 'recette' ? montant : "",
+                    "E/C": document.getElementById('opModalCompte').value,
+                });
+                await recalculerEnveloppes();
+                await updateHeader();
+                closeOpModal();
+            } catch(e) {
+                console.error('saveOpModal error:', e);
+                alert('Erreur lors de la sauvegarde : ' + e.message);
+            }
         };
 
         onSnapshot(query(opsColl, orderBy("Date", "desc"), limit(40)), (snap) => {
