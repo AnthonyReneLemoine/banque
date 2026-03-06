@@ -3,11 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HERMINE Finance - Version Corrigée</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>BANK - v5</title>
+    <style>
+        :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Header & Banner */
+        .header-banner { background: rgba(44, 62, 80, 0.95); backdrop-filter: blur(10px); color: white; position: fixed; top: 0; left: 0; right: 0; height: 65px; z-index: 1000; display: flex; justify-content: space-around; align-items: center; }
+        .recap-item { text-align: center; }
+        .recap-val { font-size: 16px; font-weight: bold; display: block; }
+        .recap-label { font-size: 9px; text-transform: uppercase; color: #bdc3c7; }
+        .sync-badge { font-size: 10px; padding: 4px 10px; border-radius: 20px; font-weight: bold; }
+        .sync-ok { background: rgba(39,174,96,0.2); color: #2ecc71; border: 1px solid #2ecc71; }
+        .sync-wait { background: rgba(243,156,18,0.2); color: #f39c12; border: 1px solid #f39c12; }
+
+        /* Navigation */
+        .tab-bar { position: fixed; top: 65px; left: 0; right: 0; height: 40px; background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; z-index: 999; }
+        .tab-btn { flex: 1; border: none; background: none; font-size: 12px; font-weight: 700; color: #7f8c8d; cursor: pointer; border-bottom: 3px solid transparent; transition: all .15s; }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
+
+        /* Screens */
+        .screen { display: none; width: 100%; padding: 115px 15px 30px 15px; box-sizing: border-box; flex-direction: column; align-items: center; }
+        .screen.active { display: flex; }
+
+        /* Forms */
+        form { background: white; width: 100%; max-width: 400px; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); box-sizing: border-box; }
+        .form-group { margin-bottom: 12px; }
+        label { font-size: 11px; font-weight: 600; color: #7f8c8d; margin-bottom: 4px; display: block; text-align: center; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fafafa; font-size: 14px; box-sizing: border-box; text-align: center; font-family: inherit; }
+        
+        .segmented-control { display: flex; background: #eee; padding: 3px; border-radius: 10px; margin-bottom: 8px; }
+        .segmented-control label { flex: 1; text-align: center; padding: 6px; cursor: pointer; border-radius: 8px; font-size: 12px; color: #666; margin-bottom:0; }
+        .segmented-control input[type="radio"] { display: none; }
+        .segmented-control input:checked + label { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        #btnAjouter { width: 100%; padding: 14px; border: none; border-radius: 10px; background: var(--success); color: white; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 5px; }
+
+        /* History Cards */
+        .history-section { width: 100%; max-width: 400px; }
+        .op-card { background: white; padding: 10px 15px; border-radius: 15px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .op-card.depense { border-left-color: var(--danger); }
+        .op-card.recette { border-left-color: var(--success); }
+        .op-main { flex: 1; margin-left: 5px; overflow: hidden; }
+        .op-name { font-weight: 600; font-size: 13px; display: block; color: var(--primary); }
+        .op-amt { font-weight: bold; font-size: 14px; margin-right: 12px; min-width: 85px; text-align: right; }
+        
+        .btn-toggle { background: #eee; color: #999; border: none; padding: 4px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; cursor: pointer; margin-right: 4px; }
+        .btn-toggle.active-p { background: var(--accent); color: white; }
+        .btn-toggle.active-v { background: #f1c40f; color: #2c3e50; }
+        .btn-del { background: #fff5f5; color: var(--danger); border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 18px; }
+
+        .version { position: fixed; bottom: 5px; right: 10px; font-size: 9px; color: #ccc; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="header-banner">
+        <div class="recap-item"><span class="recap-label">Solde</span><span class="recap-val" id="valSolde">0,00 €</span></div>
+        <div id="sync-badge" class="sync-badge sync-ok">Sync: OK</div>
+        <div class="recap-item"><span class="recap-label">Dépenses (24h)</span><span class="recap-val" id="valReste">0,00 €</span></div>
+    </div>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="showScreen('saisie')">✏️ Saisie</button>
+        <button class="tab-btn" onclick="showScreen('historique')">🕐 Historique</button>
+        <button class="tab-btn" onclick="showScreen('rapport')">📊 Rapport</button>
+    </div>
+
+    <div class="screen active" id="screen-saisie">
+        <form id="formOperation">
+            <div class="form-group"><label>DATE</label><input type="date" id="date" required></div>
+            
+            <div class="form-group">
+                <label>COMPTE / TYPE</label>
+                <div class="segmented-control">
+                    <input type="radio" name="compte" value="c" id="c" checked><label for="c">Courant</label>
+                    <input type="radio" name="compte" value="e" id="e"><label for="e">Essentiel</label>
+                </div>
+                <div class="segmented-control">
+                    <input type="radio" name="typeOperation" value="depense" id="d" checked><label for="d">Dépense</label>
+                    <input type="radio" name="typeOperation" value="recette" id="r"><label for="r">Recette</label>
+                </div>
+            </div>
+
+            <div class="form-group"><label>TIERS / FOURNISSEUR</label><input type="text" id="fournisseur" required placeholder="Ex: Leclerc, L'Hermine..."></div>
+            <div class="form-group"><label>MONTANT (€)</label><input type="number" step="0.01" id="montant" required placeholder="0.00"></div>
+            <div class="form-group"><label>MOYEN DE PAIEMENT</label>
+                <select id="paiement">
+                    <option>Carte Bancaire</option>
+                    <option>Virement</option>
+                    <option>Prélèvement</option>
+                    <option>Espèces</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="btnAjouter">Enregistrer l'opération</button>
+        </form>
+    </div>
+
+    <div class="screen" id="screen-historique">
+        <div class="history-section" id="history-list">
+            </div>
+    </div>
+
+    <div class="screen" id="screen-rapport">
+        <div style="text-align:center; color:#7f8c8d; margin-top:50px;">
+            <p>📊 Statistiques en cours de calcul...</p>
+        </div>
+    </div>
+
+    <div class="version">VERSION 5</div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyABmCu61-jScR4yDAqFKJ_RXwcKAmok4pg",
@@ -22,128 +131,114 @@
         const db = getFirestore(app);
         const opsCollection = collection(db, "operations");
 
-        // --- ENREGISTREMENT ---
-        window.saveOperation = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
+        // --- NAVIGATION ---
+        window.showScreen = (n) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('screen-' + n).classList.add('active');
+            const btns = document.querySelectorAll('.tab-btn');
+            if(n === 'saisie') btns[0].classList.add('active');
+            if(n === 'historique') btns[1].classList.add('active');
+            if(n === 'rapport') btns[2].classList.add('active');
+        };
 
-            const montantSaisi = parseFloat(document.getElementById('montant').value);
-            
-            // On prépare l'objet avec TES champs exacts
+        const updateSync = (s) => {
+            const b = document.getElementById('sync-badge');
+            b.textContent = s === 'wait' ? 'Sync: ...' : 'Sync: OK';
+            b.className = 'sync-badge ' + (s === 'wait' ? 'sync-wait' : 'sync-ok');
+        };
+
+        // --- AJOUT ---
+        document.getElementById('formOperation').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            updateSync('wait');
+
+            const type = document.querySelector('input[name="typeOperation"]:checked').value;
+            const montant = parseFloat(document.getElementById('montant').value);
+
             const op = {
                 "Date": document.getElementById('date').value,
-                "Tiers": document.getElementById('tiers').value,
-                "Dépenses": montantSaisi < 0 ? Math.abs(montantSaisi) : "",
-                "Recettes": montantSaisi >= 0 ? montantSaisi : "",
+                "Tiers": document.getElementById('fournisseur').value,
+                "Dépenses": type === 'depense' ? montant : "",
+                "Recettes": type === 'recette' ? montant : "",
+                "E/C": document.querySelector('input[name="compte"]:checked').value,
                 "moyen de paiement": document.getElementById('paiement').value,
-                "note": "",
-                "E/C": "c", // Valeurs par défaut vues dans ton screen
-                "P": "x",
-                "V": ""
+                "P": "", 
+                "V": "",
+                "timestamp": new Date().toISOString()
             };
 
             try {
                 await addDoc(opsCollection, op);
-                document.getElementById('opForm').reset();
+                document.getElementById('formOperation').reset();
                 document.getElementById('date').valueAsDate = new Date();
-                alert("Opération enregistrée !");
-            } catch (error) {
-                console.error("Erreur:", error);
-                alert("Erreur lors de l'enregistrement.");
-            } finally {
-                btn.disabled = false;
+                updateSync('ok');
+                showScreen('historique');
+            } catch (err) {
+                console.error(err);
+                alert("Erreur de sauvegarde");
+            }
+        });
+
+        // --- ACTIONS (Pointage / Suppr) ---
+        window.toggleField = async (id, field, currentVal) => {
+            updateSync('wait');
+            const newVal = currentVal === "x" ? "" : "x";
+            await updateDoc(doc(db, "operations", id), { [field]: newVal });
+            updateSync('ok');
+        };
+
+        window.deleteOp = async (id) => {
+            if(confirm("Supprimer cette opération ?")) {
+                updateSync('wait');
+                await deleteDoc(doc(db, "operations", id));
+                updateSync('ok');
             }
         };
 
-        // --- AFFICHAGE (Lecture avec tes champs) ---
-        // Attention : On trie sur "Date" (avec majuscule)
-        const q = query(opsCollection, orderBy("Date", "desc"), limit(25));
-        
+        // --- FLUX TEMPS RÉEL ---
+        const q = query(opsCollection, orderBy("Date", "desc"), limit(50));
         onSnapshot(q, (snapshot) => {
-            const list = document.getElementById('recentOps');
+            const list = document.getElementById('history-list');
             list.innerHTML = '';
-            
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                
-                // Logique pour afficher soit la dépense, soit la recette
-                const depense = parseFloat(data["Dépenses"]) || 0;
-                const recette = parseFloat(data["Recettes"]) || 0;
-                const montantAffiche = recette > 0 ? recette : -depense;
-                
-                // Formatage de la date pour l'affichage (si c'est du ISO)
-                const dateAffichee = data["Date"] ? data["Date"].split('T')[0] : "---";
+            let soldeTotal = 0;
+            let depensesRecent = 0;
 
-                const row = `
-                    <tr class="border-b text-sm hover:bg-gray-50">
-                        <td class="p-3 text-gray-600">${dateAffichee}</td>
-                        <td class="p-3">
-                            <div class="font-bold text-slate-800">${data["Tiers"] || "Inconnu"}</div>
-                            <div class="text-[10px] text-gray-400 uppercase">${data["moyen de paiement"] || ""}</div>
-                        </td>
-                        <td class="p-3 text-right font-black ${montantAffiche < 0 ? 'text-red-500' : 'text-green-600'}">
-                            ${montantAffiche.toFixed(2)}€
-                        </td>
-                    </tr>`;
-                list.innerHTML += row;
+            snapshot.forEach((docSnap) => {
+                const op = docSnap.data();
+                const id = docSnap.id;
+                const dep = parseFloat(op["Dépenses"]) || 0;
+                const rec = parseFloat(op["Recettes"]) || 0;
+                const isDepense = dep > 0;
+                const montant = isDepense ? -dep : rec;
+
+                soldeTotal += montant;
+
+                // Rendu HTML
+                const card = document.createElement('div');
+                card.className = `op-card ${isDepense ? 'depense' : 'recette'}`;
+                card.innerHTML = `
+                    <div class="op-main">
+                        <span style="font-size:9px;color:#bdc3c7;">${op.Date}</span>
+                        <span class="op-name">${op.Tiers}</span>
+                        <div style="margin-top:5px;">
+                            <button class="btn-toggle ${op.P === 'x' ? 'active-p' : ''}" onclick="toggleField('${id}', 'P', '${op.P}')">C</button>
+                            <button class="btn-toggle ${op.V === 'x' ? 'active-v' : ''}" onclick="toggleField('${id}', 'V', '${op.V}')">D</button>
+                        </div>
+                    </div>
+                    <div class="op-amt" style="color: ${isDepense ? 'var(--danger)' : 'var(--success)'}">
+                        ${montant.toFixed(2).replace('.', ',')} €
+                    </div>
+                    <button class="btn-del" onclick="deleteOp('${id}')">×</button>
+                `;
+                list.appendChild(card);
             });
-        }, (error) => {
-            console.error("Erreur flux:", error);
+
+            document.getElementById('valSolde').textContent = soldeTotal.toFixed(2).replace('.', ',') + " €";
         });
 
-        window.onload = () => { document.getElementById('date').valueAsDate = new Date(); };
+        // Init date
+        document.getElementById('date').valueAsDate = new Date();
     </script>
-</head>
-<body class="bg-slate-100 min-h-screen p-4 font-sans">
-    <div class="max-w-md mx-auto">
-        <header class="mb-6 text-center">
-            <h1 class="text-2xl font-black text-slate-900">HERMINE <span class="text-blue-600">BANK</span></h1>
-        </header>
-
-        <div class="bg-white p-5 rounded-2xl shadow-lg border border-slate-200 mb-6">
-            <form id="opForm" onsubmit="saveOperation(event)" class="space-y-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Date</label>
-                        <input type="date" id="date" required class="w-full border-gray-200 border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Montant (+/-)</label>
-                        <input type="number" step="0.01" id="montant" placeholder="Ex: -16.64" required class="w-full border-gray-200 border rounded-lg p-2 text-sm font-bold outline-none">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400 uppercase">Tiers (Libellé)</label>
-                    <input type="text" id="tiers" placeholder="Ex: Casino, Leclerc..." required class="w-full border-gray-200 border rounded-lg p-2 text-sm outline-none">
-                </div>
-
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400 uppercase">Moyen de paiement</label>
-                    <select id="paiement" class="w-full border-gray-200 border rounded-lg p-2 text-sm bg-white outline-none">
-                        <option>Carte Bancaire</option>
-                        <option>Espèces</option>
-                        <option>Virement</option>
-                        <option>Prélèvement</option>
-                    </select>
-                </div>
-
-                <button type="submit" id="submitBtn" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition-all shadow-md active:scale-95">
-                    Ajouter l'opération
-                </button>
-            </form>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                <span class="font-bold text-slate-700 text-xs uppercase tracking-widest">Derniers flux</span>
-            </div>
-            <table class="w-full text-left">
-                <tbody id="recentOps">
-                    </tbody>
-            </table>
-        </div>
-    </div>
 </body>
 </html>
