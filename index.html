@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BANK - v15</title>
+    <title>BANK - v16</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
@@ -167,11 +167,11 @@
         <div id="enveloppes-list" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
     </div>
 
-    <div class="version">VERSION 15</div>
+    <div class="version">VERSION 16</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, getDocs, doc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyABmCu61-jScR4yDAqFKJ_RXwcKAmok4pg",
@@ -185,6 +185,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const opsColl = collection(db, "operations");
+        const envColl = collection(db, "enveloppes");
 
         const cleanVal = (v) => {
             if (!v || v === "") return 0;
@@ -196,11 +197,12 @@
         const fmt = (n) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
         // =============================================
-        // --- ENVELOPPES (stockées en localStorage) ---
+        // --- ENVELOPPES (stockées dans Firestore) ---
         // =============================================
-
-        const ENV_KEY = 'banque_enveloppes_v1';
-        const ENV_RESET_KEY = 'banque_env_reset';
+        // Chaque document a un champ "lastResetMonth" (format "YYYY-M").
+        // La remise à zéro se déclenche automatiquement au 1er accès du mois :
+        // si lastResetMonth != mois courant → reste = montant.
+        // Cela fonctionne sur tous les appareils via onSnapshot.
 
         const ENVELOPPES_DEFAUT = [
             { id: "carburant",                    nom: "carburant",                   montant: 60,     multiplicateur: null },
@@ -218,66 +220,75 @@
             { id: "ai",                            nom: "ai",                           montant: 21.60,  multiplicateur: null },
         ];
 
-        // Charge les enveloppes depuis localStorage (init si absent)
-        const loadEnveloppes = () => {
-            const stored = localStorage.getItem(ENV_KEY);
-            if (stored) return JSON.parse(stored);
-            const init = ENVELOPPES_DEFAUT.map(e => ({ ...e, reste: e.montant }));
-            saveEnveloppes(init);
-            return init;
+        const currentMonthKey = () => {
+            const n = new Date();
+            return `${n.getFullYear()}-${n.getMonth() + 1}`;
         };
 
-        const saveEnveloppes = (envs) => {
-            localStorage.setItem(ENV_KEY, JSON.stringify(envs));
+        // Crée les documents manquants au premier lancement
+        const initEnveloppes = async () => {
+            const snap = await getDocs(envColl);
+            const existingIds = new Set(snap.docs.map(d => d.id));
+            const key = currentMonthKey();
+            for (const env of ENVELOPPES_DEFAUT) {
+                if (!existingIds.has(env.id)) {
+                    await setDoc(doc(db, "enveloppes", env.id), {
+                        nom: env.nom,
+                        montant: env.montant,
+                        reste: env.montant,
+                        multiplicateur: env.multiplicateur,
+                        lastResetMonth: key
+                    });
+                }
+            }
         };
 
-        // Remise à zéro au début de chaque mois (reste = montant)
-        const checkMonthlyReset = () => {
-            const now = new Date();
-            const currentKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
-            const lastReset = localStorage.getItem(ENV_RESET_KEY);
+        // Remet reste = montant pour les enveloppes dont le mois a changé
+        const checkMonthlyReset = async () => {
+            const snap = await getDocs(envColl);
+            const key = currentMonthKey();
             const infoEl = document.getElementById('env-reset-info');
-            if (lastReset !== currentKey) {
-                const envs = loadEnveloppes();
-                const reset = envs.map(e => ({ ...e, reste: e.montant }));
-                saveEnveloppes(reset);
-                localStorage.setItem(ENV_RESET_KEY, currentKey);
-                if (infoEl) infoEl.textContent = 'Remis à zéro ce mois-ci';
-            } else {
-                const mois = now.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
-                if (infoEl) infoEl.textContent = `Mois : ${mois}`;
+            let resetCount = 0;
+            for (const docSnap of snap.docs) {
+                const data = docSnap.data();
+                if (data.lastResetMonth !== key) {
+                    await updateDoc(doc(db, "enveloppes", docSnap.id), {
+                        reste: data.montant,
+                        lastResetMonth: key
+                    });
+                    resetCount++;
+                }
+            }
+            if (infoEl) {
+                const mois = new Date().toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+                infoEl.textContent = resetCount > 0 ? `Remis à zéro — ${mois}` : `Mois : ${mois}`;
             }
         };
 
         // Déduit le montant d'une dépense de l'enveloppe correspondante
-        const deduireEnveloppe = (tiers, montantOp) => {
+        const deduireEnveloppe = async (tiers, montantOp) => {
             const tiersNorm = tiers.toLowerCase().trim();
-            const envs = loadEnveloppes();
-            let matched = false;
-            const updated = envs.map(e => {
-                const nomNorm = e.nom.toLowerCase().trim();
-                if (!matched && (tiersNorm.includes(nomNorm) || nomNorm.includes(tiersNorm))) {
-                    matched = true;
-                    return { ...e, reste: parseFloat((e.reste - montantOp).toFixed(2)) };
+            const snap = await getDocs(envColl);
+            for (const docSnap of snap.docs) {
+                const data = docSnap.data();
+                const nomNorm = data.nom.toLowerCase().trim();
+                if (tiersNorm.includes(nomNorm) || nomNorm.includes(tiersNorm)) {
+                    const newReste = parseFloat((data.reste - montantOp).toFixed(2));
+                    await updateDoc(doc(db, "enveloppes", docSnap.id), { reste: newReste });
+                    break;
                 }
-                return e;
-            });
-            if (matched) {
-                saveEnveloppes(updated);
-                renderEnveloppes();
             }
         };
 
-        // --- AFFICHAGE DES ENVELOPPES ---
-        const renderEnveloppes = () => {
+        // --- AFFICHAGE DES ENVELOPPES (appelé par onSnapshot) ---
+        const renderEnveloppes = (docs) => {
             const list = document.getElementById('enveloppes-list');
             if (!list) return;
-            const envs = loadEnveloppes();
-            const envMap = Object.fromEntries(envs.map(e => [e.id, e]));
+            const envMap = Object.fromEntries(docs.map(d => [d.id, { ...d.data(), docId: d.id }]));
 
-            const groupeTransport    = ["carburant", "resto"];
-            const groupeCourses      = ["leclerc", "inter"];
-            const groupeAbonnements  = ["disney", "mma", "mh", "malakoff", "cofidis", "youtube", "paypal", "virement vers caisse epargne", "ai"];
+            const groupeTransport   = ["carburant", "resto"];
+            const groupeCourses     = ["leclerc", "inter"];
+            const groupeAbonnements = ["disney", "mma", "mh", "malakoff", "cofidis", "youtube", "paypal", "virement vers caisse epargne", "ai"];
 
             const renderGroupe = (titre, ids) => {
                 const items = ids.map(id => envMap[id]).filter(Boolean);
@@ -292,11 +303,11 @@
         };
 
         const renderEnvCard = (env) => {
-            const reste  = env.reste ?? env.montant;
+            const reste   = env.reste ?? env.montant;
             const montant = env.montant;
-            const ratio  = montant > 0 ? Math.max(0, Math.min(1, reste / montant)) : 0;
-            const pct    = Math.round(ratio * 100);
-            let stateClass = reste < 0 ? 'over' : ratio < 0.25 ? 'warn' : 'ok';
+            const ratio   = montant > 0 ? Math.max(0, Math.min(1, reste / montant)) : 0;
+            const pct     = Math.round(ratio * 100);
+            const stateClass = reste < 0 ? 'over' : ratio < 0.25 ? 'warn' : 'ok';
 
             let multHtml = '';
             if (env.multiplicateur !== null && env.multiplicateur !== undefined) {
@@ -306,7 +317,7 @@
                         <span class="env-mult-label">× 125€ :</span>
                         ${[3,4,5].map(m => `
                             <button class="env-mult-btn ${m === mult ? 'active' : ''}"
-                                onclick="setMultiplicateur('${env.id}', ${m})">${m}</button>
+                                onclick="setMultiplicateur('${env.docId}', ${m})">${m}</button>
                         `).join('')}
                         <span style="font-size:10px; color:#7f8c8d; margin-left:4px;">= ${fmt(mult * 125)}</span>
                     </div>
@@ -331,17 +342,19 @@
         };
 
         // --- CHANGEMENT DU MULTIPLICATEUR LECLERC ---
-        window.setMultiplicateur = (envId, mult) => {
-            const envs = loadEnveloppes();
-            const updated = envs.map(e => {
-                if (e.id !== envId) return e;
-                const newMontant = mult * 125;
-                const depense = e.montant - (e.reste ?? e.montant);
-                const newReste = parseFloat((newMontant - depense).toFixed(2));
-                return { ...e, multiplicateur: mult, montant: newMontant, reste: newReste };
+        window.setMultiplicateur = async (docId, mult) => {
+            const snap = await getDocs(envColl);
+            const docSnap = snap.docs.find(d => d.id === docId);
+            if (!docSnap) return;
+            const data = docSnap.data();
+            const newMontant = mult * 125;
+            const depense = data.montant - (data.reste ?? data.montant);
+            const newReste = parseFloat((newMontant - depense).toFixed(2));
+            await updateDoc(doc(db, "enveloppes", docId), {
+                multiplicateur: mult,
+                montant: newMontant,
+                reste: newReste
             });
-            saveEnveloppes(updated);
-            renderEnveloppes();
         };
 
         // --- AUTOCOMPLETE TIERS ---
@@ -410,7 +423,7 @@
 
             // Déduire de l'enveloppe si c'est une dépense
             if (type === 'depense') {
-                deduireEnveloppe(tiersVal, montantVal);
+                await deduireEnveloppe(tiersVal, montantVal);
             }
 
             document.getElementById('formOperation').reset();
@@ -502,7 +515,10 @@
             }).join('');
         });
 
-        renderEnveloppes();
+        // Écoute temps réel des enveloppes (sync tous appareils)
+        onSnapshot(envColl, (snap) => {
+            renderEnveloppes(snap.docs);
+        });
 
         // --- INITIALISATION ---
         const today = new Date();
@@ -511,8 +527,9 @@
         const lastYear = new Date(); lastYear.setFullYear(today.getFullYear() - 1);
         document.getElementById('r-debut').valueAsDate = lastYear;
 
-        checkMonthlyReset();
         updateHeader();
+        await initEnveloppes();
+        await checkMonthlyReset();
     </script>
 </body>
 </html>
