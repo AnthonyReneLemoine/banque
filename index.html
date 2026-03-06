@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BANK - v16</title>
+    <title>BANK - v17</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
@@ -92,9 +92,9 @@
 <body>
 
     <div class="header-banner">
-        <div class="recap-item"><span class="recap-label">Recettes</span><span class="recap-val" id="headRecette" style="color: #2ecc71;">...</span></div>
-        <div class="recap-item"><span class="recap-label">Dépenses</span><span class="recap-val" id="headDepense" style="color: #ff7675;">...</span></div>
         <div class="recap-item"><span class="recap-label">Solde</span><span class="recap-val" id="headSolde">...</span></div>
+        <div style="width:1px; height:35px; background:rgba(255,255,255,0.15);"></div>
+        <div class="recap-item"><span class="recap-label">Reste (hors enveloppes)</span><span class="recap-val" id="headReste">...</span></div>
     </div>
 
     <div class="tab-bar">
@@ -157,6 +157,10 @@
             <button id="btnRapport" onclick="lancerRapport()">Générer le rapport</button>
         </div>
         <div class="rapport-results" id="rapport-results"></div>
+        <div class="totaux-card" style="margin-top:10px;">
+            <div class="total-item"><span class="total-val rec" id="rapportRecette">...</span><span class="total-lbl">Recettes totales</span></div>
+            <div class="total-item"><span class="total-val dep" id="rapportDepense">...</span><span class="total-lbl">Dépenses totales</span></div>
+        </div>
     </div>
 
     <div class="screen" id="screen-enveloppes">
@@ -164,10 +168,15 @@
             <span class="env-header-title">Enveloppes budgétaires</span>
             <span class="env-reset-info" id="env-reset-info"></span>
         </div>
+        <div id="env-total-card" style="width:100%; max-width:400px; background:#2c3e50; border-radius:15px; padding:14px 20px; margin-bottom:14px; display:flex; justify-content:space-around; box-sizing:border-box; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+            <div style="text-align:center;"><span style="font-size:17px; font-weight:800; color:white; display:block;" id="envTotalReste">...</span><span style="font-size:9px; text-transform:uppercase; color:#bdc3c7; letter-spacing:1px;">Reste total</span></div>
+            <div style="width:1px; background:rgba(255,255,255,0.15);"></div>
+            <div style="text-align:center;"><span style="font-size:17px; font-weight:800; color:#bdc3c7; display:block;" id="envTotalMontant">...</span><span style="font-size:9px; text-transform:uppercase; color:#bdc3c7; letter-spacing:1px;">Budget total</span></div>
+        </div>
         <div id="enveloppes-list" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
     </div>
 
-    <div class="version">VERSION 16</div>
+    <div class="version">VERSION 17</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -219,6 +228,19 @@
             { id: "virement vers caisse epargne",  nom: "virement vers caisse epargne", montant: 25,     multiplicateur: null },
             { id: "ai",                            nom: "ai",                           montant: 21.60,  multiplicateur: null },
         ];
+
+        // État partagé pour le calcul du "reste" dans le bandeau
+        let lastSolde = 0;
+        let lastEnvRestTotal = 0;
+
+        const updateHeadReste = () => {
+            const reste = lastSolde - lastEnvRestTotal;
+            const el = document.getElementById('headReste');
+            if (el) {
+                el.innerText = fmt(reste);
+                el.style.color = reste < 0 ? '#ff7675' : '#fff';
+            }
+        };
 
         const currentMonthKey = () => {
             const n = new Date();
@@ -285,6 +307,20 @@
             const list = document.getElementById('enveloppes-list');
             if (!list) return;
             const envMap = Object.fromEntries(docs.map(d => [d.id, { ...d.data(), docId: d.id }]));
+
+            // Calcul des totaux
+            const totalReste   = docs.reduce((s, d) => s + (d.data().reste   ?? 0), 0);
+            const totalMontant = docs.reduce((s, d) => s + (d.data().montant ?? 0), 0);
+
+            // Mise à jour carte total enveloppes
+            const elR = document.getElementById('envTotalReste');
+            const elM = document.getElementById('envTotalMontant');
+            if (elR) elR.innerText = fmt(totalReste);
+            if (elM) elM.innerText = fmt(totalMontant);
+
+            // Mise à jour "reste" dans le bandeau
+            lastEnvRestTotal = totalReste;
+            updateHeadReste();
 
             const groupeTransport   = ["carburant", "resto"];
             const groupeCourses     = ["leclerc", "inter"];
@@ -487,9 +523,11 @@
                 r += cleanVal(doc.data()["Recettes"]);
                 d += cleanVal(doc.data()["Dépenses"]);
             });
-            document.getElementById('headRecette').innerText = fmt(r);
-            document.getElementById('headDepense').innerText = fmt(d);
+            lastSolde = r - d;
             document.getElementById('headSolde').innerText = fmt(r - d);
+            document.getElementById('rapportRecette').innerText = fmt(r);
+            document.getElementById('rapportDepense').innerText = fmt(d);
+            updateHeadReste();
         };
 
         onSnapshot(query(opsColl, orderBy("Date", "desc"), limit(40)), (snap) => {
