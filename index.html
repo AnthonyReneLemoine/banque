@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BANK - v18</title>
+    <title>BANK - v19</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
@@ -183,6 +183,7 @@
             <span class="env-header-title">Enveloppes budgétaires</span>
             <div style="display:flex; align-items:center; gap:8px;">
                 <span class="env-reset-info" id="env-reset-info"></span>
+                <button onclick="recalculerEnveloppes()" style="background:#7f8c8d; color:white; border:none; border-radius:10px; padding:6px 10px; font-size:12px; font-weight:700; cursor:pointer;" title="Recalculer depuis l'historique du mois">↺</button>
                 <button onclick="openEnvModal(null)" style="background:var(--accent); color:white; border:none; border-radius:10px; padding:6px 13px; font-size:13px; font-weight:700; cursor:pointer;">+ Ajouter</button>
             </div>
         </div>
@@ -218,7 +219,7 @@
         </div>
     </div>
 
-    <div class="version">VERSION 18</div>
+    <div class="version">VERSION 19</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -307,42 +308,57 @@
             }
         };
 
-        // Remet reste = montant pour les enveloppes dont le mois a changé
+        // Marque les enveloppes du mois précédent (lastResetMonth mis à jour)
         const checkMonthlyReset = async () => {
             const snap = await getDocs(envColl);
             const key = currentMonthKey();
-            const infoEl = document.getElementById('env-reset-info');
-            let resetCount = 0;
             for (const docSnap of snap.docs) {
-                const data = docSnap.data();
-                if (data.lastResetMonth !== key) {
-                    await updateDoc(doc(db, "enveloppes", docSnap.id), {
-                        reste: data.montant,
-                        lastResetMonth: key
-                    });
-                    resetCount++;
+                if (docSnap.data().lastResetMonth !== key) {
+                    await updateDoc(doc(db, "enveloppes", docSnap.id), { lastResetMonth: key });
                 }
-            }
-            if (infoEl) {
-                const mois = new Date().toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
-                infoEl.textContent = resetCount > 0 ? `Remis à zéro — ${mois}` : `Mois : ${mois}`;
             }
         };
 
-        // Déduit le montant d'une dépense de l'enveloppe correspondante
-        const deduireEnveloppe = async (tiers, montantOp) => {
-            const tiersNorm = tiers.toLowerCase().trim();
-            const snap = await getDocs(envColl);
-            for (const docSnap of snap.docs) {
+        // Recalcule les restes en scannant toutes les dépenses du mois courant.
+        // Garantit la cohérence même pour les opérations saisies avant l'ajout de l'onglet.
+        const recalculerEnveloppes = async () => {
+            const now = new Date();
+            const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+            // 1. Toutes les dépenses du mois courant
+            const opsSnap = await getDocs(opsColl);
+            const monthOps = [];
+            opsSnap.forEach(d => {
+                const data = d.data();
+                const dep = cleanVal(data["Dépenses"]);
+                if (dep > 0 && data["Date"] && data["Date"].startsWith(monthPrefix)) {
+                    monthOps.push({ tiers: (data["Tiers"] || "").toLowerCase().trim(), montant: dep });
+                }
+            });
+
+            // 2. Pour chaque enveloppe : reste = montant - Σ dépenses correspondantes ce mois
+            const envSnap = await getDocs(envColl);
+            for (const docSnap of envSnap.docs) {
                 const data = docSnap.data();
                 const nomNorm = data.nom.toLowerCase().trim();
-                if (tiersNorm.includes(nomNorm) || nomNorm.includes(tiersNorm)) {
-                    const newReste = parseFloat((data.reste - montantOp).toFixed(2));
-                    await updateDoc(doc(db, "enveloppes", docSnap.id), { reste: newReste });
-                    break;
+                let totalDep = 0;
+                for (const op of monthOps) {
+                    if (op.tiers.includes(nomNorm) || nomNorm.includes(op.tiers)) {
+                        totalDep += op.montant;
+                    }
                 }
+                const newReste = parseFloat((data.montant - totalDep).toFixed(2));
+                await updateDoc(doc(db, "enveloppes", docSnap.id), { reste: newReste });
+            }
+
+            const infoEl = document.getElementById('env-reset-info');
+            if (infoEl) {
+                const mois = now.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+                infoEl.textContent = `Mois : ${mois}`;
             }
         };
+
+        window.recalculerEnveloppes = recalculerEnveloppes;
 
         // --- AFFICHAGE DES ENVELOPPES (appelé par onSnapshot) ---
         const renderEnveloppes = (docs) => {
@@ -575,9 +591,9 @@
 
             await addDoc(opsColl, op);
 
-            // Déduire de l'enveloppe si c'est une dépense
+            // Recalcul complet des enveloppes depuis l'historique du mois
             if (type === 'depense') {
-                await deduireEnveloppe(tiersVal, montantVal);
+                await recalculerEnveloppes();
             }
 
             document.getElementById('formOperation').reset();
@@ -687,6 +703,7 @@
         updateHeader();
         await initEnveloppes();
         await checkMonthlyReset();
+        await recalculerEnveloppes(); // rattrape les opérations déjà saisies
     </script>
 </body>
 </html>
