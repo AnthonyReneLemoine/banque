@@ -42,6 +42,23 @@
         .tag { background: var(--primary); color: white; border-radius: 20px; padding: 3px 10px; font-size: 11px; display: flex; align-items: center; gap: 5px; }
         .tag-x { cursor: pointer; font-size: 14px; line-height: 1; }
 
+        /* --- LOGIN SCREEN --- */
+        #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        #login-screen.hidden { display: none; }
+        .login-box { background: white; width: 100%; max-width: 340px; padding: 32px 28px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .login-logo { text-align: center; margin-bottom: 24px; }
+        .login-logo img { width: 56px; height: 56px; }
+        .login-logo h2 { margin: 10px 0 0; font-size: 20px; color: var(--primary); letter-spacing: 2px; }
+        .login-box input { margin-bottom: 12px; }
+        #btnLogin { width: 100%; padding: 14px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 4px; transition: 0.2s; }
+        #btnLogin:hover { background: #3d566e; }
+        #loginError { color: var(--danger); font-size: 12px; text-align: center; margin-top: 10px; min-height: 18px; }
+        /* --- APP SHELL --- */
+        #app-shell { display: none; width: 100%; }
+        #app-shell.visible { display: block; }
+        #btnLogout { background: none; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.8); font-size: 11px; padding: 5px 10px; border-radius: 8px; cursor: pointer; margin-left: 8px; }
+        #btnLogout:hover { background: rgba(255,255,255,0.1); }
+
         .op-card { background: white; padding: 12px 15px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; width: 100%; max-width: 400px; border-left: 5px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.03); box-sizing: border-box; }
         .op-card.depense { border-left-color: var(--danger); }
         .op-card.recette { border-left-color: var(--success); }
@@ -110,10 +127,28 @@
 </head>
 <body>
 
+    <!-- Écran de connexion -->
+    <div id="login-screen">
+        <div class="login-box">
+            <div class="login-logo">
+                <img src="iconmonstr-bank.png" alt="logo">
+                <h2>BANK</h2>
+            </div>
+            <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="vous@email.com" autocomplete="username"></div>
+            <div class="form-group"><label>Mot de passe</label><input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"></div>
+            <button id="btnLogin">SE CONNECTER</button>
+            <div id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- Application (cachée jusqu'à authentification) -->
+    <div id="app-shell">
+
     <div class="header-banner">
         <div class="recap-item"><span class="recap-label">Solde</span><span class="recap-val" id="headSolde">...</span></div>
         <div style="width:1px; height:35px; background:rgba(255,255,255,0.15);"></div>
         <div class="recap-item"><span class="recap-label">Reste (hors enveloppes)</span><span class="recap-val" id="headReste">...</span></div>
+        <button id="btnLogout" title="Se déconnecter">⏻</button>
     </div>
 
     <div class="tab-bar">
@@ -271,9 +306,12 @@
 
     <div class="version">VERSION 25</div>
 
+    </div><!-- /app-shell -->
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, getDocs, doc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyABmCu61-jScR4yDAqFKJ_RXwcKAmok4pg",
@@ -286,8 +324,48 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
         const opsColl = collection(db, "operations");
         const envColl = collection(db, "enveloppes");
+
+        // --- AUTH UI ---
+        const loginScreen = document.getElementById('login-screen');
+        const appShell    = document.getElementById('app-shell');
+        const loginError  = document.getElementById('loginError');
+
+        document.getElementById('btnLogin').addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail').value.trim();
+            const pwd   = document.getElementById('loginPassword').value;
+            loginError.textContent = '';
+            if (!email || !pwd) { loginError.textContent = 'Veuillez remplir tous les champs.'; return; }
+            try {
+                await signInWithEmailAndPassword(auth, email, pwd);
+            } catch (e) {
+                loginError.textContent = 'Email ou mot de passe incorrect.';
+            }
+        });
+        document.getElementById('loginPassword').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('btnLogin').click();
+        });
+
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+            await signOut(auth);
+        });
+
+        let appInitialized = false;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                loginScreen.classList.add('hidden');
+                appShell.classList.add('visible');
+                if (!appInitialized) { appInitialized = true; initApp(); }
+            } else {
+                loginScreen.classList.remove('hidden');
+                appShell.classList.remove('visible');
+            }
+        });
+
+        async function initApp() {
 
         const cleanVal = (v) => {
             if (!v || v === "") return 0;
@@ -819,6 +897,7 @@
         await initEnveloppes();
         await checkMonthlyReset();
         await recalculerEnveloppes(); // rattrape les opérations déjà saisies
+        } // end initApp
     </script>
 </body>
 </html>
