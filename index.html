@@ -143,6 +143,7 @@
                 <datalist id="tiersList"></datalist>
             </div>
             <div class="form-group"><label>Montant (€)</label><input type="number" step="0.01" id="montant" placeholder="0.00" required inputmode="decimal"></div>
+            <div class="form-group"><label>Note (optionnelle)</label><input type="text" id="note" placeholder="Ex: courses semaine"></div>
             <button type="submit" id="btnAjouter">ENREGISTRER</button>
         </form>
     </div>
@@ -256,6 +257,10 @@
                     <option value="E">E</option>
                     <option value="C">C</option>
                 </select>
+            </div>
+            <div class="env-modal-field">
+                <label>Note</label>
+                <input type="text" id="opModalNote" placeholder="note...">
             </div>
             <div class="env-modal-actions">
                 <button class="env-modal-cancel" onclick="closeOpModal()">Annuler</button>
@@ -631,7 +636,7 @@
                 "Recettes": type === 'recette' ? montantVal : "",
                 "E/C": document.querySelector('input[name="compte"]:checked').value,
                 "moyen de paiement": "",
-                "P": "", "V": "", "note": "", "timestamp": new Date().toISOString()
+                "P": "", "V": "", "note": document.getElementById('note').value.trim(), "timestamp": new Date().toISOString()
             };
 
             await addDoc(opsColl, op);
@@ -722,6 +727,7 @@
             document.getElementById('opModalType').value = isDep ? 'depense' : 'recette';
             document.getElementById('opModalMontant').value = isDep ? cleanVal(op["Dépenses"]) : cleanVal(op["Recettes"]);
             document.getElementById('opModalCompte').value = op["E/C"] || 'E';
+            document.getElementById('opModalNote').value = op.note || '';
             document.getElementById('opModal').classList.add('open');
         };
 
@@ -741,6 +747,7 @@
                     "Dépenses": type === 'depense' ? montant : "",
                     "Recettes": type === 'recette' ? montant : "",
                     "E/C": document.getElementById('opModalCompte').value,
+                    note: document.getElementById('opModalNote').value.trim(),
                 }, { merge: true });
                 await recalculerEnveloppes();
                 await updateHeader();
@@ -768,6 +775,7 @@
                         <div class="op-main">
                             <small style="color:#999">${op.Date}</small><br>
                             <span class="op-name">${op.Tiers}</span>
+                            ${op.note ? `<small style="color:#aaa;font-style:italic;font-size:11px;">${op.note}</small>` : ''}
                             <div style="margin-top:5px;">
                                 <button class="btn-toggle ${op.P === 'x' ? 'active-p' : ''}" onclick="toggleField('${id}','P','${op.P}')">C</button>
                                 <button class="btn-toggle ${op.V === 'x' ? 'active-v' : ''}" onclick="toggleField('${id}','V','${op.V}')">D</button>
