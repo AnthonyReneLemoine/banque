@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BANK - v11</title>
+    <title>BANK - v12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
@@ -93,7 +93,11 @@
                     <input type="radio" name="typeOp" value="recette" id="r"><label for="r">Recette</label>
                 </div>
             </div>
-            <div class="form-group"><label>Tiers / Fournisseur</label><input type="text" id="tiers" placeholder="Ex: Drive Leclerc" required></div>
+            <div class="form-group">
+                <label>Tiers / Fournisseur</label>
+                <input type="text" id="tiers" list="tiersList" placeholder="Ex: Drive Leclerc" required>
+                <datalist id="tiersList"></datalist>
+            </div>
             <div class="form-group"><label>Montant (€)</label><input type="number" step="0.01" id="montant" placeholder="0.00" required inputmode="decimal"></div>
             <button type="submit" id="btnAjouter">ENREGISTRER</button>
         </form>
@@ -111,7 +115,8 @@
             </div>
             <div class="form-group">
                 <label>Fournisseur(s) — Entrée pour valider</label>
-                <input type="text" id="r-fourn-input" placeholder="ex : EDF, Leclerc…" style="text-align:left;">
+                <input type="text" id="r-fourn-input" list="tiersListRapport" placeholder="ex : EDF, Leclerc…" style="text-align:left;">
+                <datalist id="tiersListRapport"></datalist>
                 <div class="tags-wrap" id="r-fourn-tags"></div>
             </div>
             <div class="r2col">
@@ -129,7 +134,7 @@
         <div class="rapport-results" id="rapport-results"></div>
     </div>
 
-    <div class="version">VERSION 11</div>
+    <div class="version">VERSION 12</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -156,6 +161,16 @@
         };
 
         const fmt = (n) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+
+        // --- AUTOCOMPLETE TIERS ---
+        const updateTiersList = (docs) => {
+            const uniqueTiers = [...new Set(docs.map(d => d.data()["Tiers"]).filter(Boolean))].sort();
+            const dl = document.getElementById('tiersList');
+            const dlR = document.getElementById('tiersListRapport');
+            const options = uniqueTiers.map(t => `<option value="${t}">`).join('');
+            dl.innerHTML = options;
+            dlR.innerHTML = options;
+        };
 
         // --- GESTION TAGS ---
         let fournisseursTags = [];
@@ -236,7 +251,6 @@
                 const opCompte = data["E/C"];
                 const opTiers = data["Tiers"] ? data["Tiers"].toLowerCase() : "";
 
-                // Filtres
                 if (debut && opDate < debut) return;
                 if (fin && opDate > fin) return;
                 if (compte !== 'tous' && opCompte !== compte) return;
@@ -265,6 +279,7 @@
 
         const updateHeader = async () => {
             const snap = await getDocs(opsColl);
+            updateTiersList(snap.docs); // Mise à jour de la liste auto-complétion
             let r = 0; let d = 0;
             snap.forEach(doc => {
                 r += cleanVal(doc.data()["Recettes"]);
@@ -298,7 +313,6 @@
             }).join('');
         });
 
-        // Init Dates
         const today = new Date();
         document.getElementById('date').valueAsDate = today;
         document.getElementById('r-fin').valueAsDate = today;
