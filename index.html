@@ -211,15 +211,22 @@
 
     <div class="screen" id="screen-rapport">
         <div class="rapport-form">
-            <div class="r2col">
+            <div class="r2col" id="r-date-row">
                 <div class="form-group"><label>Date début</label><input type="date" id="r-debut"></div>
                 <div class="form-group"><label>Date fin</label><input type="date" id="r-fin"></div>
+            </div>
+            <div class="form-group" style="text-align:center;">
+                <button class="hist-toggle" id="toggleToutesOps" onclick="toggleRapportToutesOps()" style="width:100%;">Toutes les opérations (sans limite de date)</button>
             </div>
             <div class="form-group">
                 <label>Fournisseur(s) — Entrée pour valider</label>
                 <input type="text" id="r-fourn-input" list="tiersListRapport" placeholder="ex : EDF, Leclerc…" style="text-align:left;">
                 <datalist id="tiersListRapport"></datalist>
                 <div class="tags-wrap" id="r-fourn-tags"></div>
+            </div>
+            <div class="form-group">
+                <label>Note (mot-clé)</label>
+                <input type="text" id="r-note" placeholder="ex : airfryer, courses…" style="text-align:left;">
             </div>
             <div class="r2col">
                 <div class="form-group">
@@ -750,14 +757,24 @@
         });
 
         // --- RAPPORT ---
+        let rapportToutesOps = false;
+
+        window.toggleRapportToutesOps = () => {
+            rapportToutesOps = !rapportToutesOps;
+            document.getElementById('toggleToutesOps').classList.toggle('active', rapportToutesOps);
+            document.getElementById('r-date-row').style.opacity = rapportToutesOps ? '0.35' : '1';
+            document.getElementById('r-date-row').style.pointerEvents = rapportToutesOps ? 'none' : '';
+        };
+
         window.lancerRapport = async () => {
             const resDiv = document.getElementById('rapport-results');
             resDiv.innerHTML = '<p style="text-align:center; color:#7f8c8d; font-size:12px;">Chargement...</p>';
 
-            const debut = document.getElementById('r-debut').value;
-            const fin = document.getElementById('r-fin').value;
+            const debut = rapportToutesOps ? '' : document.getElementById('r-debut').value;
+            const fin   = rapportToutesOps ? '' : document.getElementById('r-fin').value;
             const compte = document.getElementById('r-compte').value;
             const typeReq = document.getElementById('r-type').value;
+            const noteFilter = document.getElementById('r-note').value.trim().toLowerCase();
 
             const snap = await getDocs(opsColl);
             let tDep = 0; let tRec = 0;
@@ -769,11 +786,13 @@
                 const opDate = data["Date"];
                 const opCompte = data["E/C"];
                 const opTiers = data["Tiers"] ? data["Tiers"].toLowerCase() : "";
+                const opNote  = data["note"]  ? data["note"].toLowerCase()  : "";
 
                 if (debut && opDate < debut) return;
                 if (fin && opDate > fin) return;
                 if (compte !== 'tous' && opCompte !== compte) return;
                 if (fournisseursTags.length > 0 && !fournisseursTags.some(tag => opTiers.includes(tag.toLowerCase()))) return;
+                if (noteFilter && !opNote.includes(noteFilter)) return;
 
                 if (typeReq === 'tous' || typeReq === 'depense') tDep += d;
                 if (typeReq === 'tous' || typeReq === 'recette') tRec += r;
