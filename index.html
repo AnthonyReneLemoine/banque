@@ -923,6 +923,8 @@
             if (filterSearch) {
                 // Recherche sur toute la base de données
                 const snap = await getDocs(query(opsColl, orderBy("Date", "desc")));
+                // Alimenter opsCache pour que openOpModal fonctionne sur ces docs
+                snap.docs.forEach(ds => { opsCache[ds.id] = ds.data(); });
                 renderHistory(snap.docs);
             } else {
                 // Retour à l'affichage limité aux 40 dernières
