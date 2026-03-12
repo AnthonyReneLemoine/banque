@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BANK - v12</title>
+    <title>BANK - v25</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --bg: #f0f2f5; --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
-        
+
         .header-banner { background: #2c3e50; color: white; position: fixed; top: 0; left: 0; right: 0; height: 65px; z-index: 1000; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .recap-item { text-align: center; }
         .recap-val { font-size: 15px; font-weight: bold; display: block; }
         .recap-label { font-size: 8px; text-transform: uppercase; color: #bdc3c7; letter-spacing: 1px; }
 
         .tab-bar { position: fixed; top: 65px; left: 0; right: 0; height: 45px; background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; z-index: 999; }
-        .tab-btn { flex: 1; border: none; background: none; font-size: 12px; font-weight: 700; color: #7f8c8d; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab-btn { flex: 1; border: none; background: none; font-size: 11px; font-weight: 700; color: #7f8c8d; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
         .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
         .screen { display: none; width: 100%; padding: 130px 15px 30px 15px; box-sizing: border-box; flex-direction: column; align-items: center; }
@@ -25,7 +25,7 @@
         .form-group { margin-bottom: 12px; }
         label { font-size: 11px; font-weight: 600; color: #7f8c8d; margin-bottom: 4px; display: block; text-align: center; text-transform: uppercase; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 12px; background: #fafafa; font-size: 14px; text-align: center; font-family: inherit; outline: none; }
-        
+
         .segmented-control { display: flex; background: #eee; padding: 3px; border-radius: 12px; margin-bottom: 8px; }
         .segmented-control label { flex: 1; text-align: center; padding: 8px; cursor: pointer; border-radius: 10px; font-size: 12px; color: #666; margin: 0; transition: 0.2s; }
         .segmented-control input[type="radio"] { display: none; }
@@ -42,17 +42,52 @@
         .tag { background: var(--primary); color: white; border-radius: 20px; padding: 3px 10px; font-size: 11px; display: flex; align-items: center; gap: 5px; }
         .tag-x { cursor: pointer; font-size: 14px; line-height: 1; }
 
+        /* --- LOGIN SCREEN --- */
+        #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        #login-screen.hidden { display: none; }
+        .login-box { background: white; width: 100%; max-width: 340px; padding: 32px 28px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .login-logo { text-align: center; margin-bottom: 24px; }
+        .login-logo img { width: 56px; height: 56px; }
+        .login-logo h2 { margin: 10px 0 0; font-size: 20px; color: var(--primary); letter-spacing: 2px; }
+        .login-box input { margin-bottom: 12px; }
+        #btnLogin { width: 100%; padding: 14px; border: none; border-radius: 12px; background: var(--primary); color: white; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 4px; transition: 0.2s; }
+        #btnLogin:hover { background: #3d566e; }
+        #loginError { color: var(--danger); font-size: 12px; text-align: center; margin-top: 10px; min-height: 18px; }
+        /* --- APP SHELL --- */
+        #app-shell { display: none; width: 100%; }
+        #app-shell.visible { display: block; }
+        #btnLogout { background: none; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.8); font-size: 11px; padding: 5px 10px; border-radius: 8px; cursor: pointer; margin-left: 8px; }
+        #btnLogout:hover { background: rgba(255,255,255,0.1); }
+
         .op-card { background: white; padding: 12px 15px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; width: 100%; max-width: 400px; border-left: 5px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.03); box-sizing: border-box; }
+
+        /* --- HISTORIQUE MULTI-COLONNES (grands écrans) --- */
+        @media (min-width: 900px) {
+            #screen-historique { max-width: 1600px; width: 100%; align-self: center; padding-left: 20px; padding-right: 20px; }
+            #history-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: start; }
+            #history-list .op-card { max-width: none; margin-bottom: 0; }
+            #hist-toggle-bar { max-width: none; width: 100%; }
+        }
+        @media (min-width: 1300px) {
+            #history-list { grid-template-columns: repeat(4, 1fr); }
+        }
+        @media (min-width: 1700px) {
+            #screen-historique { max-width: 1900px; }
+            #history-list { grid-template-columns: repeat(5, 1fr); }
+        }
         .op-card.depense { border-left-color: var(--danger); }
         .op-card.recette { border-left-color: var(--success); }
         .op-main { flex: 1; margin-left: 8px; }
         .op-name { font-weight: 700; font-size: 13px; color: var(--primary); }
         .op-amt { font-weight: 800; font-size: 14px; min-width: 90px; text-align: right; }
-        
+
         .btn-toggle { background: #eee; color: #999; border: none; padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; margin-right: 5px; }
+        .hist-toggle { background: #eee; color: #7f8c8d; border: none; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.2s, color 0.2s; }
+        .hist-toggle.active { background: var(--accent); color: white; }
         .btn-toggle.active-p { background: var(--accent); color: white; }
         .btn-toggle.active-v { background: #f1c40f; color: #2c3e50; }
-        .btn-del { background: #fff5f5; color: var(--danger); border: none; width: 30px; height: 30px; border-radius: 10px; cursor: pointer; font-size: 20px; }
+        .btn-del  { background: #fff5f5; color: var(--danger); border: none; width: 30px; height: 30px; border-radius: 10px; cursor: pointer; font-size: 20px; }
+        .btn-edit { background: #eaf4fb; color: var(--accent); border: none; width: 30px; height: 30px; border-radius: 10px; cursor: pointer; font-size: 14px; margin-right: 4px; }
 
         .rapport-results { width: 100%; max-width: 400px; margin-top: 20px; }
         .totaux-card { background: white; border-radius: 16px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-around; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -62,21 +97,81 @@
         .total-val.rec { color: var(--success); }
         .total-lbl { font-size: 9px; text-transform: uppercase; color: #7f8c8d; }
 
+        /* --- ENVELOPPES --- */
+        .env-header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .env-header-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+        .env-reset-info { font-size: 10px; color: #7f8c8d; }
+        .env-card { background: white; border-radius: 15px; margin-bottom: 10px; width: 100%; max-width: 400px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; box-sizing: border-box; }
+        .env-card-inner { padding: 12px 15px 8px 15px; display: flex; align-items: center; gap: 10px; }
+        .env-nom { font-weight: 700; font-size: 13px; color: var(--primary); flex: 1; }
+        .env-amounts { text-align: right; }
+        .env-reste { font-size: 15px; font-weight: 800; }
+        .env-reste.ok { color: var(--success); }
+        .env-reste.warn { color: #f39c12; }
+        .env-reste.over { color: var(--danger); }
+        .env-montant { font-size: 10px; color: #7f8c8d; }
+        .env-bar-wrap { height: 5px; background: #eee; width: 100%; }
+        .env-bar { height: 5px; border-radius: 0 3px 3px 0; transition: width 0.4s; }
+        .env-bar.ok { background: var(--success); }
+        .env-bar.warn { background: #f39c12; }
+        .env-bar.over { background: var(--danger); width: 100% !important; }
+        .env-mult-wrap { padding: 6px 15px 10px 15px; display: flex; align-items: center; gap: 8px; }
+        .env-mult-label { font-size: 10px; color: #7f8c8d; font-weight: 600; text-transform: uppercase; }
+        .env-mult-btn { width: 30px; height: 30px; border-radius: 8px; border: 2px solid #e0e0e0; background: #fafafa; font-size: 13px; font-weight: 700; cursor: pointer; color: #7f8c8d; transition: 0.2s; }
+        .env-mult-btn.active { border-color: var(--accent); background: var(--accent); color: white; }
+        .env-section-title { width: 100%; max-width: 400px; font-size: 10px; font-weight: 700; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 5px 5px; }
+        .env-action-btn { border: none; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; padding: 4px 9px; }
+        .env-btn-edit { background: #eaf4fb; color: var(--accent); }
+        .env-btn-del  { background: #fff5f5; color: var(--danger); }
+
+        /* Modal */
+        .env-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 3000; align-items: center; justify-content: center; }
+        .env-modal-overlay.open { display: flex; }
+        .env-modal-box { background: white; border-radius: 20px; padding: 24px 22px 20px; width: 92%; max-width: 380px; box-sizing: border-box; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+        .env-modal-title { font-size: 16px; font-weight: 800; color: var(--primary); margin: 0 0 18px; }
+        .env-modal-field { margin-bottom: 14px; }
+        .env-modal-field label { font-size: 10px; font-weight: 700; color: #7f8c8d; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .env-modal-field input { width: 100%; padding: 11px 14px; border: 1px solid #e0e0e0; border-radius: 12px; font-size: 14px; box-sizing: border-box; font-family: inherit; outline: none; }
+        .env-modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+        .env-modal-cancel { flex: 1; padding: 13px; border: 1px solid #e0e0e0; border-radius: 12px; background: white; font-size: 14px; cursor: pointer; font-family: inherit; }
+        .env-modal-save   { flex: 2; padding: 13px; border: none; border-radius: 12px; background: var(--success); color: white; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
         .version { position: fixed; bottom: 8px; right: 12px; font-size: 10px; color: #cbd5e0; font-weight: bold; }
     </style>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAACXBIWXMAAC4jAAAuIwF4pT92AAAGNGlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgMTAuMC1jMDAwIDI1LkcuZWY3MmU0ZSwgMjAyNS8wNi8yNy0xODo1NDowNSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI3LjMgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyNi0wMi0wNVQxODo1NToyNyswMTowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjYtMDItMDVUMTg6NTU6NTIrMDE6MDAiIHhtcDpNZXRhZGF0YURhdGU9IjIwMjYtMDItMDVUMTg6NTU6NTIrMDE6MDAiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjg3ODBhMGIwLTE5ZGUtMGE0MS04NDhlLTk2NDJkMmI5Njc4ZSIgeG1wTU06RG9jdW1lbnRJRD0iYWRvYmU6ZG9jaWQ6cGhvdG9zaG9wOjk2NDU5M2U1LTJjNWYtMTg0YS1hYzQ3LTY4NmRiZWI5N2RjMSIgeG1wTU06T3JpZ2luYWxEb2N1bWVudElEPSJ4bXAuZGlkOjUzYzQ0MDk0LWZlMjYtYjY0MC1iMTkyLWI2Mjc1MDA0NGI2NSI+IDx4bXBNTTpIaXN0b3J5PiA8cmRmOlNlcT4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNyZWF0ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6NTNjNDQwOTQtZmUyNi1iNjQwLWIxOTItYjYyNzUwMDQ0YjY1IiBzdEV2dDp3aGVuPSIyMDI2LTAyLTA1VDE4OjU1OjI3KzAxOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjcuMyAoV2luZG93cykiLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNvbnZlcnRlZCIgc3RFdnQ6cGFyYW1ldGVycz0iZnJvbSBhcHBsaWNhdGlvbi92bmQuYWRvYmUucGhvdG9zaG9wIHRvIGltYWdlL3BuZyIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6ODc4MGEwYjAtMTlkZS0wYTQxLTg0OGUtOTY0MmQyYjk2NzhlIiBzdEV2dDp3aGVuPSIyMDI2LTAyLTA1VDE4OjU1OjUyKzAxOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjcuMyAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPC9yZGY6U2VxPiA8L3htcE1NOkhpc3Rvcnk+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+g8FX/AAAAYdJREFUeNrt3LFtwzAURVGN4lE8QkbwCB5BG3CkjJBRPIKjQkWQRrAgkI/k+cBr0ijIMS4CF1qW/u+27WffbXFN72vba9t732v/mWtw5Q/E/xV/nvqJeh9Mwhok6mgS1ihRR5OwBomSsMBESVhooiQsMFESFpgoCQtNlIQFJkrCAhMlYaGJkrDARElYYKKmTljpCGLohPWSqCkS1luihk5YGQii64SNkqghEjZaorpOWJkIIjphsySqi4TNlqjohBUAGQmTqKCESVRQwiQqJGESFZQwiQpKmESFJEyighImUUEJk6iQhElUWMKe21aL2HNxzrmx73FBKz/9CuF+wTPvJ74yqv3MU/d9wX8Un/6i6wXPXE98CGo/EwgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIEBiQR7eBpT1NiDnnAu61aru8LxDt+6AADEgQAwIEAMyG8gvnMeAp3LyAlYAAAAASUVORK5CYII=">
 </head>
 <body>
 
+    <!-- Écran de connexion -->
+    <div id="login-screen">
+        <div class="login-box">
+            <div class="login-logo">
+                <img src="iconmonstr-bank.png" alt="logo">
+                <h2>BANK</h2>
+            </div>
+            <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="vous@email.com" autocomplete="username"></div>
+            <div class="form-group"><label>Mot de passe</label><input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"></div>
+            <button id="btnLogin">SE CONNECTER</button>
+            <div id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- Application (cachée jusqu'à authentification) -->
+    <div id="app-shell">
+
     <div class="header-banner">
-        <div class="recap-item"><span class="recap-label">Recettes</span><span class="recap-val" id="headRecette" style="color: #2ecc71;">...</span></div>
-        <div class="recap-item"><span class="recap-label">Dépenses</span><span class="recap-val" id="headDepense" style="color: #ff7675;">...</span></div>
         <div class="recap-item"><span class="recap-label">Solde</span><span class="recap-val" id="headSolde">...</span></div>
+        <div style="width:1px; height:35px; background:rgba(255,255,255,0.15);"></div>
+        <div class="recap-item"><span class="recap-label">Reste (hors enveloppes)</span><span class="recap-val" id="headReste">...</span></div>
+        <span style="font-size:9px; color:rgba(255,255,255,0.35); position:absolute; bottom:4px; right:52px; letter-spacing:0.5px;">v38</span>
+        <button id="btnLogout" title="Se déconnecter">⏻</button>
     </div>
 
     <div class="tab-bar">
-        <button class="tab-btn active" id="tab-saisie" onclick="showScreen('saisie')">✏️ Saisie</button>
-        <button class="tab-btn" id="tab-historique" onclick="showScreen('historique')">🕐 Historique</button>
-        <button class="tab-btn" id="tab-rapport" onclick="showScreen('rapport')">📊 Rapport</button>
+        <button class="tab-btn active" id="tab-saisie" onclick="showScreen('saisie')">Saisie</button>
+        <button class="tab-btn" id="tab-historique" onclick="showScreen('historique')">Historique</button>
+        <button class="tab-btn" id="tab-rapport" onclick="showScreen('rapport')">Rapport</button>
+        <button class="tab-btn" id="tab-enveloppes" onclick="showScreen('enveloppes')">Enveloppes</button>
     </div>
 
     <div class="screen active" id="screen-saisie">
@@ -99,25 +194,40 @@
                 <datalist id="tiersList"></datalist>
             </div>
             <div class="form-group"><label>Montant (€)</label><input type="number" step="0.01" id="montant" placeholder="0.00" required inputmode="decimal"></div>
+            <div class="form-group"><label>Note (optionnelle)</label><input type="text" id="note" placeholder="Ex: courses semaine"></div>
             <button type="submit" id="btnAjouter">ENREGISTRER</button>
         </form>
     </div>
 
     <div class="screen" id="screen-historique">
-        <div id="history-list" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+        <div id="hist-toggle-bar" style="width:100%; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 5px 4px; box-sizing:border-box;">
+            <input type="text" id="hist-search" placeholder="🔍 Fournisseur ou montant…" oninput="onHistSearch()" style="flex:1; min-width:160px; max-width:320px; padding:7px 12px; border:1px solid #e0e0e0; border-radius:20px; font-size:12px; background:#fff; outline:none;">
+            <div style="display:flex; gap:8px; margin-left:auto;">
+                <button class="hist-toggle" id="toggleMoisCourant" onclick="toggleHistMois()">Mois en cours</button>
+                <button class="hist-toggle" id="toggleMasquerC" onclick="toggleMasquerC()">Masquer C</button>
+            </div>
+        </div>
+        <div id="history-list" style="width: 100%;"></div>
     </div>
 
     <div class="screen" id="screen-rapport">
         <div class="rapport-form">
-            <div class="r2col">
+            <div class="r2col" id="r-date-row">
                 <div class="form-group"><label>Date début</label><input type="date" id="r-debut"></div>
                 <div class="form-group"><label>Date fin</label><input type="date" id="r-fin"></div>
+            </div>
+            <div class="form-group" style="text-align:center;">
+                <button class="hist-toggle" id="toggleToutesOps" onclick="toggleRapportToutesOps()" style="width:100%;">Toutes les opérations (sans limite de date)</button>
             </div>
             <div class="form-group">
                 <label>Fournisseur(s) — Entrée pour valider</label>
                 <input type="text" id="r-fourn-input" list="tiersListRapport" placeholder="ex : EDF, Leclerc…" style="text-align:left;">
                 <datalist id="tiersListRapport"></datalist>
                 <div class="tags-wrap" id="r-fourn-tags"></div>
+            </div>
+            <div class="form-group">
+                <label>Note (mot-clé)</label>
+                <input type="text" id="r-note" placeholder="ex : airfryer, courses…" style="text-align:left;">
             </div>
             <div class="r2col">
                 <div class="form-group">
@@ -129,16 +239,106 @@
                     <select id="r-type"><option value="tous">Tous</option><option value="depense">Dépenses</option><option value="recette">Recettes</option></select>
                 </div>
             </div>
-            <button id="btnRapport" onclick="lancerRapport()">📊 Générer le rapport</button>
+            <button id="btnRapport" onclick="lancerRapport()">Générer le rapport</button>
         </div>
         <div class="rapport-results" id="rapport-results"></div>
+        <div class="totaux-card" style="margin-top:10px;">
+            <div class="total-item"><span class="total-val rec" id="rapportRecette">...</span><span class="total-lbl">Recettes totales</span></div>
+            <div class="total-item"><span class="total-val dep" id="rapportDepense">...</span><span class="total-lbl">Dépenses totales</span></div>
+        </div>
     </div>
 
-    <div class="version">VERSION 12</div>
+    <div class="screen" id="screen-enveloppes">
+        <div class="env-header">
+            <span class="env-header-title">Enveloppes budgétaires</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="env-reset-info" id="env-reset-info"></span>
+                <button onclick="recalculerEnveloppes()" style="background:#7f8c8d; color:white; border:none; border-radius:10px; padding:6px 10px; font-size:12px; font-weight:700; cursor:pointer;" title="Recalculer depuis l'historique du mois">↺</button>
+                <button onclick="openEnvModal(null)" style="background:var(--accent); color:white; border:none; border-radius:10px; padding:6px 13px; font-size:13px; font-weight:700; cursor:pointer;">+ Ajouter</button>
+            </div>
+        </div>
+        <div id="env-total-card" style="width:100%; max-width:400px; background:#2c3e50; border-radius:15px; padding:14px 20px; margin-bottom:14px; display:flex; justify-content:space-around; box-sizing:border-box; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+            <div style="text-align:center;"><span style="font-size:17px; font-weight:800; color:white; display:block;" id="envTotalReste">...</span><span style="font-size:9px; text-transform:uppercase; color:#bdc3c7; letter-spacing:1px;">Reste total</span></div>
+            <div style="width:1px; background:rgba(255,255,255,0.15);"></div>
+            <div style="text-align:center;"><span style="font-size:17px; font-weight:800; color:#bdc3c7; display:block;" id="envTotalMontant">...</span><span style="font-size:9px; text-transform:uppercase; color:#bdc3c7; letter-spacing:1px;">Budget total</span></div>
+        </div>
+        <div id="enveloppes-list" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+    </div>
+
+    <!-- Modal ajout/modification enveloppe -->
+    <div class="env-modal-overlay" id="envModal">
+        <div class="env-modal-box">
+            <p class="env-modal-title" id="envModalTitle">Enveloppe</p>
+            <input type="hidden" id="envModalId">
+            <div class="env-modal-field">
+                <label>Nom / fournisseur</label>
+                <input type="text" id="envModalNom" placeholder="ex : électricité">
+            </div>
+            <div class="env-modal-field">
+                <label>Budget mensuel (€)</label>
+                <input type="number" step="0.01" id="envModalMontant" placeholder="0.00" inputmode="decimal">
+            </div>
+            <div class="env-modal-field" id="envModalResteWrap">
+                <label>Reste actuel (€)</label>
+                <input type="number" step="0.01" id="envModalReste" placeholder="0.00" inputmode="decimal">
+            </div>
+            <div class="env-modal-actions">
+                <button class="env-modal-cancel" onclick="closeEnvModal()">Annuler</button>
+                <button class="env-modal-save"   onclick="saveEnvModal()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal édition opération -->
+    <div class="env-modal-overlay" id="opModal">
+        <div class="env-modal-box">
+            <p class="env-modal-title">Modifier l'opération</p>
+            <input type="hidden" id="opModalId">
+            <div class="env-modal-field">
+                <label>Date</label>
+                <input type="date" id="opModalDate">
+            </div>
+            <div class="env-modal-field">
+                <label>Tiers</label>
+                <input type="text" id="opModalTiers" list="tiersList" placeholder="ex : leclerc" autocomplete="off">
+            </div>
+            <div class="env-modal-field">
+                <label>Type</label>
+                <select id="opModalType" style="width:100%;padding:11px 14px;border:1px solid #e0e0e0;border-radius:12px;font-size:14px;box-sizing:border-box;font-family:inherit;outline:none;">
+                    <option value="depense">Dépense</option>
+                    <option value="recette">Recette</option>
+                </select>
+            </div>
+            <div class="env-modal-field">
+                <label>Montant (€)</label>
+                <input type="number" step="0.01" id="opModalMontant" placeholder="0.00" inputmode="decimal">
+            </div>
+            <div class="env-modal-field">
+                <label>Compte (E/C)</label>
+                <select id="opModalCompte" style="width:100%;padding:11px 14px;border:1px solid #e0e0e0;border-radius:12px;font-size:14px;box-sizing:border-box;font-family:inherit;outline:none;">
+                    <option value="E">E</option>
+                    <option value="C">C</option>
+                </select>
+            </div>
+            <div class="env-modal-field">
+                <label>Note</label>
+                <input type="text" id="opModalNote" placeholder="note...">
+            </div>
+            <div class="env-modal-actions">
+                <button class="env-modal-cancel" onclick="closeOpModal()">Annuler</button>
+                <button class="env-modal-save"   onclick="saveOpModal()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="version">VERSION 25</div>
+
+    </div><!-- /app-shell -->
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, getDocs, doc, updateDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, getDocs, doc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyABmCu61-jScR4yDAqFKJ_RXwcKAmok4pg",
@@ -151,7 +351,48 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
         const opsColl = collection(db, "operations");
+        const envColl = collection(db, "enveloppes");
+
+        // --- AUTH UI ---
+        const loginScreen = document.getElementById('login-screen');
+        const appShell    = document.getElementById('app-shell');
+        const loginError  = document.getElementById('loginError');
+
+        document.getElementById('btnLogin').addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail').value.trim();
+            const pwd   = document.getElementById('loginPassword').value;
+            loginError.textContent = '';
+            if (!email || !pwd) { loginError.textContent = 'Veuillez remplir tous les champs.'; return; }
+            try {
+                await signInWithEmailAndPassword(auth, email, pwd);
+            } catch (e) {
+                loginError.textContent = 'Email ou mot de passe incorrect.';
+            }
+        });
+        document.getElementById('loginPassword').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('btnLogin').click();
+        });
+
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+            await signOut(auth);
+        });
+
+        let appInitialized = false;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                loginScreen.classList.add('hidden');
+                appShell.classList.add('visible');
+                if (!appInitialized) { appInitialized = true; initApp(); }
+            } else {
+                loginScreen.classList.remove('hidden');
+                appShell.classList.remove('visible');
+            }
+        });
+
+        async function initApp() {
 
         const cleanVal = (v) => {
             if (!v || v === "") return 0;
@@ -161,6 +402,285 @@
         };
 
         const fmt = (n) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+
+        // =============================================
+        // --- ENVELOPPES (stockées dans Firestore) ---
+        // =============================================
+        // Chaque document a un champ "lastResetMonth" (format "YYYY-M").
+        // La remise à zéro se déclenche automatiquement au 1er accès du mois :
+        // si lastResetMonth != mois courant → reste = montant.
+        // Cela fonctionne sur tous les appareils via onSnapshot.
+
+        const ENVELOPPES_DEFAUT = [
+            { id: "carburant",                    nom: "carburant",                   montant: 60,     multiplicateur: null },
+            { id: "resto",                         nom: "resto",                        montant: 60,     multiplicateur: null },
+            { id: "leclerc",                       nom: "leclerc",                      montant: 500,    multiplicateur: 4    },
+            { id: "inter",                         nom: "inter",                        montant: 150,    multiplicateur: null },
+            { id: "disney",                        nom: "disney",                       montant: 6.99,   multiplicateur: null },
+            { id: "mma",                           nom: "mma",                          montant: 16.55,  multiplicateur: null },
+            { id: "mh",                            nom: "mh",                           montant: 730.97, multiplicateur: null },
+            { id: "malakoff",                      nom: "malakoff",                     montant: 45.96,  multiplicateur: null },
+            { id: "cofidis",                       nom: "cofidis",                      montant: 32.08,  multiplicateur: null },
+            { id: "youtube",                       nom: "youtube",                      montant: 12.99,  multiplicateur: null },
+            { id: "paypal",                        nom: "paypal",                       montant: 11.49,  multiplicateur: null },
+            { id: "virement vers caisse epargne",  nom: "virement vers caisse epargne", montant: 25,     multiplicateur: null },
+            { id: "ai",                            nom: "ai",                           montant: 21.60,  multiplicateur: null },
+        ];
+
+        // État partagé pour le calcul du "reste" dans le bandeau
+        let lastSolde = 0;
+        let lastEnvRestTotal = 0;
+
+        const updateHeadReste = () => {
+            const reste = lastSolde - lastEnvRestTotal;
+            const el = document.getElementById('headReste');
+            if (el) {
+                el.innerText = fmt(reste);
+                el.style.color = reste < 0 ? '#ff7675' : '#fff';
+            }
+        };
+
+        const currentMonthKey = () => {
+            const n = new Date();
+            return `${n.getFullYear()}-${n.getMonth() + 1}`;
+        };
+
+        // Crée les documents manquants au premier lancement
+        const initEnveloppes = async () => {
+            const snap = await getDocs(envColl);
+            const existingIds = new Set(snap.docs.map(d => d.id));
+            const key = currentMonthKey();
+            for (const env of ENVELOPPES_DEFAUT) {
+                if (!existingIds.has(env.id)) {
+                    await setDoc(doc(db, "enveloppes", env.id), {
+                        nom: env.nom,
+                        montant: env.montant,
+                        reste: env.montant,
+                        multiplicateur: env.multiplicateur,
+                        lastResetMonth: key
+                    });
+                }
+            }
+        };
+
+        // Marque les enveloppes du mois précédent (lastResetMonth mis à jour)
+        const checkMonthlyReset = async () => {
+            const snap = await getDocs(envColl);
+            const key = currentMonthKey();
+            for (const docSnap of snap.docs) {
+                if (docSnap.data().lastResetMonth !== key) {
+                    await updateDoc(doc(db, "enveloppes", docSnap.id), { lastResetMonth: key });
+                }
+            }
+        };
+
+        // Recalcule les restes en scannant toutes les dépenses du mois courant.
+        // Garantit la cohérence même pour les opérations saisies avant l'ajout de l'onglet.
+        const recalculerEnveloppes = async () => {
+            const now = new Date();
+            const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+            // 1. Toutes les dépenses du mois courant
+            const opsSnap = await getDocs(opsColl);
+            const monthOps = [];
+            opsSnap.forEach(d => {
+                const data = d.data();
+                const dep = cleanVal(data["Dépenses"]);
+                if (dep > 0 && data["Date"] && data["Date"].startsWith(monthPrefix)) {
+                    monthOps.push({ tiers: (data["Tiers"] || "").toLowerCase().trim(), montant: dep });
+                }
+            });
+
+            // 2. Pour chaque enveloppe : reste = montant - Σ dépenses correspondantes ce mois
+            const envSnap = await getDocs(envColl);
+            for (const docSnap of envSnap.docs) {
+                const data = docSnap.data();
+                const nomNorm = data.nom.toLowerCase().trim();
+                let totalDep = 0;
+                for (const op of monthOps) {
+                    if (new RegExp("\\b" + nomNorm.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + "\\b").test(op.tiers)) {
+                        totalDep += op.montant;
+                    }
+                }
+                const newReste = parseFloat((data.montant - totalDep).toFixed(2));
+                await updateDoc(doc(db, "enveloppes", docSnap.id), { reste: newReste });
+            }
+
+            const infoEl = document.getElementById('env-reset-info');
+            if (infoEl) {
+                const mois = now.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+                infoEl.textContent = `Mois : ${mois}`;
+            }
+        };
+
+        window.recalculerEnveloppes = recalculerEnveloppes;
+
+        // --- AFFICHAGE DES ENVELOPPES (appelé par onSnapshot) ---
+        const renderEnveloppes = (docs) => {
+            const list = document.getElementById('enveloppes-list');
+            if (!list) return;
+            const envMap = Object.fromEntries(docs.map(d => [d.id, { ...d.data(), docId: d.id }]));
+
+            // Calcul des totaux
+            const totalReste   = docs.reduce((s, d) => s + (d.data().reste   ?? 0), 0);
+            const totalMontant = docs.reduce((s, d) => s + (d.data().montant ?? 0), 0);
+
+            // Mise à jour carte total enveloppes
+            const elR = document.getElementById('envTotalReste');
+            const elM = document.getElementById('envTotalMontant');
+            if (elR) elR.innerText = fmt(totalReste);
+            if (elM) elM.innerText = fmt(totalMontant);
+
+            // Mise à jour "reste" dans le bandeau
+            lastEnvRestTotal = totalReste;
+            updateHeadReste();
+
+            const groupeTransport   = ["carburant", "resto"];
+            const groupeCourses     = ["leclerc", "inter"];
+            const groupeAbonnements = ["disney", "mma", "mh", "malakoff", "cofidis", "youtube", "paypal", "virement vers caisse epargne", "ai"];
+            const tousGroupes = new Set([...groupeTransport, ...groupeCourses, ...groupeAbonnements]);
+            const autresIds   = Object.keys(envMap).filter(id => !tousGroupes.has(id));
+
+            const renderGroupe = (titre, ids) => {
+                const items = ids.map(id => envMap[id]).filter(Boolean);
+                if (!items.length) return '';
+                return `<div class="env-section-title">${titre}</div>` + items.map(renderEnvCard).join('');
+            };
+
+            list.innerHTML =
+                renderGroupe('Transport & Loisirs', groupeTransport) +
+                renderGroupe('Courses', groupeCourses) +
+                renderGroupe('Abonnements & Fixes', groupeAbonnements) +
+                renderGroupe('Autres', autresIds);
+        };
+
+        const renderEnvCard = (env) => {
+            const reste   = env.reste ?? env.montant;
+            const montant = env.montant;
+            const ratio   = montant > 0 ? Math.max(0, Math.min(1, reste / montant)) : 0;
+            const pct     = Math.round(ratio * 100);
+            const stateClass = reste < 0 ? 'over' : ratio < 0.25 ? 'warn' : 'ok';
+
+            let multHtml = '';
+            if (env.multiplicateur !== null && env.multiplicateur !== undefined) {
+                const mult = env.multiplicateur;
+                multHtml = `
+                    <div class="env-mult-wrap">
+                        <span class="env-mult-label">× 125€ :</span>
+                        ${[3,4,5].map(m => `
+                            <button class="env-mult-btn ${m === mult ? 'active' : ''}"
+                                onclick="setMultiplicateur('${env.docId}', ${m})">${m}</button>
+                        `).join('')}
+                        <span style="font-size:10px; color:#7f8c8d; margin-left:4px;">= ${fmt(mult * 125)}</span>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="env-card">
+                    <div class="env-card-inner">
+                        <div class="env-nom">${env.nom}</div>
+                        <div class="env-amounts">
+                            <div class="env-reste ${stateClass}">${fmt(reste)}</div>
+                            <div class="env-montant">/ ${fmt(montant)}</div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:4px; margin-left:8px;">
+                            <button class="env-action-btn env-btn-edit" onclick="openEnvModal('${env.docId}')">mod.</button>
+                            <button class="env-action-btn env-btn-del"  onclick="deleteEnv('${env.docId}')">suppr.</button>
+                        </div>
+                    </div>
+                    <div class="env-bar-wrap">
+                        <div class="env-bar ${stateClass}" style="width:${pct}%"></div>
+                    </div>
+                    ${multHtml}
+                </div>
+            `;
+        };
+
+        // --- CHANGEMENT DU MULTIPLICATEUR LECLERC ---
+        window.setMultiplicateur = async (docId, mult) => {
+            const snap = await getDocs(envColl);
+            const docSnap = snap.docs.find(d => d.id === docId);
+            if (!docSnap) return;
+            const data = docSnap.data();
+            const newMontant = mult * 125;
+            const depense = data.montant - (data.reste ?? data.montant);
+            const newReste = parseFloat((newMontant - depense).toFixed(2));
+            await updateDoc(doc(db, "enveloppes", docId), {
+                multiplicateur: mult,
+                montant: newMontant,
+                reste: newReste
+            });
+        };
+
+        // --- GESTION CRUD ENVELOPPES ---
+        let envSnapshot = []; // cache des docs courants (mis à jour par onSnapshot)
+
+        window.openEnvModal = (docId) => {
+            const modal = document.getElementById('envModal');
+            const resteWrap = document.getElementById('envModalResteWrap');
+            document.getElementById('envModalId').value = docId || '';
+
+            if (docId) {
+                // Mode modification
+                const envDoc = envSnapshot.find(d => d.id === docId);
+                if (!envDoc) return;
+                const data = envDoc.data();
+                document.getElementById('envModalTitle').textContent   = 'Modifier l\'enveloppe';
+                document.getElementById('envModalNom').value           = data.nom;
+                document.getElementById('envModalMontant').value       = data.montant;
+                document.getElementById('envModalReste').value         = data.reste ?? data.montant;
+                resteWrap.style.display = 'block';
+            } else {
+                // Mode ajout
+                document.getElementById('envModalTitle').textContent = 'Nouvelle enveloppe';
+                document.getElementById('envModalNom').value      = '';
+                document.getElementById('envModalMontant').value  = '';
+                document.getElementById('envModalReste').value    = '';
+                resteWrap.style.display = 'none';
+            }
+            modal.classList.add('open');
+        };
+
+        window.closeEnvModal = () => {
+            document.getElementById('envModal').classList.remove('open');
+        };
+
+        window.saveEnvModal = async () => {
+            const docId   = document.getElementById('envModalId').value;
+            const nom     = document.getElementById('envModalNom').value.trim().toLowerCase();
+            const montant = parseFloat(document.getElementById('envModalMontant').value);
+
+            if (!nom || isNaN(montant) || montant < 0) return;
+
+            if (docId) {
+                // Modification
+                const reste = parseFloat(document.getElementById('envModalReste').value);
+                await updateDoc(doc(db, "enveloppes", docId), {
+                    nom,
+                    montant,
+                    reste: isNaN(reste) ? montant : reste
+                });
+            } else {
+                // Ajout : l'ID = nom normalisé (espaces conservés, Firestore les accepte)
+                const newId = nom;
+                await setDoc(doc(db, "enveloppes", newId), {
+                    nom,
+                    montant,
+                    reste: montant,
+                    multiplicateur: null,
+                    lastResetMonth: currentMonthKey()
+                });
+            }
+            closeEnvModal();
+        };
+
+        window.deleteEnv = async (docId) => {
+            const envDoc = envSnapshot.find(d => d.id === docId);
+            const nom = envDoc ? envDoc.data().nom : docId;
+            if (!confirm(`Supprimer l'enveloppe "${nom}" ?`)) return;
+            await deleteDoc(doc(db, "enveloppes", docId));
+        };
 
         // --- AUTOCOMPLETE TIERS ---
         const updateTiersList = (docs) => {
@@ -211,19 +731,26 @@
         document.getElementById('formOperation').addEventListener('submit', async (e) => {
             e.preventDefault();
             const type = document.querySelector('input[name="typeOp"]:checked').value;
-            const montant = parseFloat(document.getElementById('montant').value);
+            const montantVal = parseFloat(document.getElementById('montant').value);
+            const tiersVal = document.getElementById('tiers').value;
 
             const op = {
                 "Date": document.getElementById('date').value,
-                "Tiers": document.getElementById('tiers').value,
-                "Dépenses": type === 'depense' ? montant : "",
-                "Recettes": type === 'recette' ? montant : "",
+                "Tiers": tiersVal,
+                "Dépenses": type === 'depense' ? montantVal : "",
+                "Recettes": type === 'recette' ? montantVal : "",
                 "E/C": document.querySelector('input[name="compte"]:checked').value,
                 "moyen de paiement": "",
-                "P": "", "V": "", "note": "", "timestamp": new Date().toISOString()
+                "P": "", "V": "", "note": document.getElementById('note').value.trim(), "timestamp": new Date().toISOString()
             };
 
             await addDoc(opsColl, op);
+
+            // Recalcul complet des enveloppes depuis l'historique du mois
+            if (type === 'depense') {
+                await recalculerEnveloppes();
+            }
+
             document.getElementById('formOperation').reset();
             document.getElementById('date').valueAsDate = new Date();
             showScreen('historique');
@@ -231,14 +758,24 @@
         });
 
         // --- RAPPORT ---
+        let rapportToutesOps = false;
+
+        window.toggleRapportToutesOps = () => {
+            rapportToutesOps = !rapportToutesOps;
+            document.getElementById('toggleToutesOps').classList.toggle('active', rapportToutesOps);
+            document.getElementById('r-date-row').style.opacity = rapportToutesOps ? '0.35' : '1';
+            document.getElementById('r-date-row').style.pointerEvents = rapportToutesOps ? 'none' : '';
+        };
+
         window.lancerRapport = async () => {
             const resDiv = document.getElementById('rapport-results');
             resDiv.innerHTML = '<p style="text-align:center; color:#7f8c8d; font-size:12px;">Chargement...</p>';
-            
-            const debut = document.getElementById('r-debut').value;
-            const fin = document.getElementById('r-fin').value;
+
+            const debut = rapportToutesOps ? '' : document.getElementById('r-debut').value;
+            const fin   = rapportToutesOps ? '' : document.getElementById('r-fin').value;
             const compte = document.getElementById('r-compte').value;
             const typeReq = document.getElementById('r-type').value;
+            const noteFilter = document.getElementById('r-note').value.trim().toLowerCase();
 
             const snap = await getDocs(opsColl);
             let tDep = 0; let tRec = 0;
@@ -250,12 +787,14 @@
                 const opDate = data["Date"];
                 const opCompte = data["E/C"];
                 const opTiers = data["Tiers"] ? data["Tiers"].toLowerCase() : "";
+                const opNote  = data["note"]  ? data["note"].toLowerCase()  : "";
 
                 if (debut && opDate < debut) return;
                 if (fin && opDate > fin) return;
                 if (compte !== 'tous' && opCompte !== compte) return;
                 if (fournisseursTags.length > 0 && !fournisseursTags.some(tag => opTiers.includes(tag.toLowerCase()))) return;
-                
+                if (noteFilter && !opNote.includes(noteFilter)) return;
+
                 if (typeReq === 'tous' || typeReq === 'depense') tDep += d;
                 if (typeReq === 'tous' || typeReq === 'recette') tRec += r;
             });
@@ -279,20 +818,85 @@
 
         const updateHeader = async () => {
             const snap = await getDocs(opsColl);
-            updateTiersList(snap.docs); // Mise à jour de la liste auto-complétion
+            updateTiersList(snap.docs);
             let r = 0; let d = 0;
             snap.forEach(doc => {
                 r += cleanVal(doc.data()["Recettes"]);
                 d += cleanVal(doc.data()["Dépenses"]);
             });
-            document.getElementById('headRecette').innerText = fmt(r);
-            document.getElementById('headDepense').innerText = fmt(d);
+            lastSolde = r - d;
             document.getElementById('headSolde').innerText = fmt(r - d);
+            document.getElementById('rapportRecette').innerText = fmt(r);
+            document.getElementById('rapportDepense').innerText = fmt(d);
+            updateHeadReste();
         };
 
-        onSnapshot(query(opsColl, orderBy("Date", "desc"), limit(40)), (snap) => {
+        // Cache des 40 dernières opérations pour ouverture rapide du modal
+        let opsCache = {};
+
+        window.openOpModal = (id) => {
+            const op = opsCache[id];
+            if (!op) return;
+            document.getElementById('opModalId').value = id;
+            document.getElementById('opModalDate').value = op.Date || '';
+            document.getElementById('opModalTiers').value = op.Tiers || '';
+            const isDep = cleanVal(op["Dépenses"]) > 0;
+            document.getElementById('opModalType').value = isDep ? 'depense' : 'recette';
+            document.getElementById('opModalMontant').value = isDep ? cleanVal(op["Dépenses"]) : cleanVal(op["Recettes"]);
+            document.getElementById('opModalCompte').value = op["E/C"] || 'E';
+            document.getElementById('opModalNote').value = op.note || '';
+            document.getElementById('opModal').classList.add('open');
+        };
+
+        window.closeOpModal = () => {
+            document.getElementById('opModal').classList.remove('open');
+        };
+
+        window.saveOpModal = async () => {
+            try {
+                const id = document.getElementById('opModalId').value;
+                const type = document.getElementById('opModalType').value;
+                const montant = parseFloat(document.getElementById('opModalMontant').value);
+                if (!id || isNaN(montant) || montant <= 0) return;
+                await setDoc(doc(db, "operations", id), {
+                    Date: document.getElementById('opModalDate').value,
+                    Tiers: document.getElementById('opModalTiers').value.trim().toLowerCase(),
+                    "Dépenses": type === 'depense' ? montant : "",
+                    "Recettes": type === 'recette' ? montant : "",
+                    "E/C": document.getElementById('opModalCompte').value,
+                    note: document.getElementById('opModalNote').value.trim(),
+                }, { merge: true });
+                await recalculerEnveloppes();
+                await updateHeader();
+                closeOpModal();
+            } catch(e) {
+                console.error('saveOpModal error:', e);
+                alert('Erreur lors de la sauvegarde : ' + e.message);
+            }
+        };
+
+        let lastHistDocs = [];
+        let filterMoisCourant = false;
+        let filterMasquerC = false;
+        let filterSearch = '';
+
+        const renderHistory = (docs) => {
+            const now = new Date();
+            const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            let filtered = filterMoisCourant ? docs.filter(ds => (ds.data()["Date"] || "").startsWith(monthPrefix)) : docs;
+            if (filterMasquerC) filtered = filtered.filter(ds => ds.data().P !== 'x');
+            if (filterSearch) {
+                const q = filterSearch.toLowerCase();
+                filtered = filtered.filter(ds => {
+                    const op = ds.data();
+                    const tiers = (op.Tiers || '').toLowerCase();
+                    const dep = cleanVal(op["Dépenses"]); const rec = cleanVal(op["Recettes"]);
+                    const amt = (dep > 0 ? dep : rec).toFixed(2);
+                    return tiers.includes(q) || amt.includes(q);
+                });
+            }
             const list = document.getElementById('history-list');
-            list.innerHTML = snap.docs.map(ds => {
+            list.innerHTML = filtered.map(ds => {
                 const op = ds.data(); const id = ds.id;
                 const dep = cleanVal(op["Dépenses"]); const rec = cleanVal(op["Recettes"]);
                 const isDep = dep > 0;
@@ -301,24 +905,71 @@
                         <div class="op-main">
                             <small style="color:#999">${op.Date}</small><br>
                             <span class="op-name">${op.Tiers}</span>
+                            ${op.note ? `<small style="color:#aaa;font-style:italic;font-size:11px;">${op.note}</small>` : ''}
                             <div style="margin-top:5px;">
                                 <button class="btn-toggle ${op.P === 'x' ? 'active-p' : ''}" onclick="toggleField('${id}','P','${op.P}')">C</button>
                                 <button class="btn-toggle ${op.V === 'x' ? 'active-v' : ''}" onclick="toggleField('${id}','V','${op.V}')">D</button>
                             </div>
                         </div>
                         <div class="op-amt" style="color: ${isDep ? 'var(--danger)' : 'var(--success)'}">${fmt(isDep ? -dep : rec)}</div>
+                        <button class="btn-edit" onclick="openOpModal('${id}')">✎</button>
                         <button class="btn-del" onclick="supprOp('${id}')">×</button>
                     </div>
                 `;
             }).join('');
+        };
+
+        window.onHistSearch = async () => {
+            filterSearch = document.getElementById('hist-search').value.trim();
+            if (filterSearch) {
+                // Recherche sur toute la base de données
+                const snap = await getDocs(query(opsColl, orderBy("Date", "desc")));
+                // Alimenter opsCache pour que openOpModal fonctionne sur ces docs
+                snap.docs.forEach(ds => { opsCache[ds.id] = ds.data(); });
+                renderHistory(snap.docs);
+            } else {
+                // Retour à l'affichage limité aux 40 dernières
+                renderHistory(lastHistDocs);
+            }
+        };
+
+        window.toggleMasquerC = () => {
+            filterMasquerC = !filterMasquerC;
+            document.getElementById('toggleMasquerC').classList.toggle('active', filterMasquerC);
+            renderHistory(lastHistDocs);
+        };
+
+        window.toggleHistMois = () => {
+            filterMoisCourant = !filterMoisCourant;
+            document.getElementById('toggleMoisCourant').classList.toggle('active', filterMoisCourant);
+            renderHistory(lastHistDocs);
+        };
+
+        onSnapshot(query(opsColl, orderBy("Date", "desc"), limit(40)), (snap) => {
+            opsCache = {};
+            snap.docs.forEach(ds => { opsCache[ds.id] = ds.data(); });
+            lastHistDocs = snap.docs;
+            renderHistory(snap.docs);
         });
 
+        // Écoute temps réel des enveloppes (sync tous appareils)
+        onSnapshot(envColl, (snap) => {
+            envSnapshot = snap.docs;
+            renderEnveloppes(snap.docs);
+        });
+
+        // --- INITIALISATION ---
         const today = new Date();
         document.getElementById('date').valueAsDate = today;
         document.getElementById('r-fin').valueAsDate = today;
         const lastYear = new Date(); lastYear.setFullYear(today.getFullYear() - 1);
         document.getElementById('r-debut').valueAsDate = lastYear;
+
         updateHeader();
+        await initEnveloppes();
+        await checkMonthlyReset();
+        await recalculerEnveloppes(); // rattrape les opérations déjà saisies
+        } // end initApp
     </script>
 </body>
 </html>
